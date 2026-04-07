@@ -16,7 +16,7 @@ class Striker():
         self.shape = pygame.Rect(0, 0, self.size, self.size)
     def update(self,surface):
         x,y = pygame.mouse.get_pos()
-        x =  min(x,SCRNWIDTH-self.size)
+        x = min(x,SCRNWIDTH-self.size)
         y = max(min(y,SCRNHEIGHT-self.size),SCRNHEIGHT//2)
         self.pos = (x,y)
         self.draw(surface)
