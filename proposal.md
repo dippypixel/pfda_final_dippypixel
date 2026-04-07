@@ -1,42 +1,60 @@
 \# Title
 
-
+Breakout: Force
 
 \## Repository
 
-<Link to your project's public GitHub respository>
+https://github.com/dippypixel/pfda_final_dippypixel
 
 
 
 \## Description
 
-1-2 sentence description of what it will do and how it relevant to media and digital arts.
+This game will be a physics based version of breakout where you can move
+the paddle with your mouse.
+It will use bare-bones physics simulation and is an example of digital 
+interactive media.
+
 
 
 
 \## Features
 
-\- Feature 1
+\- Paddle Mouse Control
 
-&nbsp;	- Short explaination of how it will be executed.
+&nbsp;	- Create a Game Shape and have it constantly update to the position of the mouse.
 
-\- Feature 2
+\- Collision System
 
-&nbsp;	- Short explaination of how it will be executed.
+&nbsp;	- The game will detect if two objects has collided with each other
 
-\- Feature N 
+\- Gravity and Bounce
 
-&nbsp;	- Short explaination of how it will be executed.
+&nbsp;	- The game will apply gravity to the ball and will make 
+            the ball bounce off surfaces at the appropiate angle 
+
+\- Velocity Calculation
+
+&nbsp;	- The game will calculate the velocity given to the ball based off the
+            velocity of the paddle
+
+\- Start Screen
+
+&nbsp;	- The game will have a simple start screen before the game initializes
+
+\- Screen Pause and shake
+
+&nbsp;	- The game screen will shake dependent on how hard you hit the ball.
 
 
 
 \## Challenges
 
-\- Short sentence of any skill or topic that needs to be learnt or researched.
+\- figuring out how collisions work
 
-\- Short sentence of any skill or topic that needs to be learnt or researched.
+\- calculating Physics and velocity 
 
-\- Short sentence of any skill or topic that needs to be learnt or researched.
+\- making the entire canvas shake.
 
 
 
@@ -44,13 +62,14 @@
 
 Ideal Outcome:
 
-\- Briefly describe what is the ideal outcome?
+\- a game where the game is reactive towards how hard the ball is 
+    hit with the paddle in a satisfying way.
 
 
 
 Minimal Viable Outcome:
 
-\- Briefly describe the bare essential for a good working outcome?
+\- a game that has a ball with physics, and you can hit it around.
 
 
 
@@ -60,23 +79,25 @@ Minimal Viable Outcome:
 
 \- Week 1
 
-&nbsp; 1. Goal 1
+&nbsp; 1. Create the Paddle
 
-&nbsp; 2. Goal 2
+&nbsp; 2. Create the ball object and make it fall at the very least.
 
-
+&nbsp; 3. make it so that the game detects collisions (but doesnt do anything else)
 
 \- Week 2
 
-&nbsp; 1. Goal 1
+&nbsp; 1. make the ball bounce off the paddle
 
-&nbsp; 2. Goal 2
+&nbsp; 2. create the blocks
+
+&nbsp; 3. have the blocks detect collision with ball
 
 
 
 \- Week N (Final)
 
-&nbsp; 1. Goal 1
+&nbsp; 1. create a simple start screen
 
-&nbsp; 2. Goal 2
+&nbsp; 2. create screenshake on hit
 
