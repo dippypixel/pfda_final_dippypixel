@@ -7,22 +7,26 @@ SCRNHEIGHT = 1080
 
 class Striker():
 
-    def __init__(self, pos=(0,0), size=30):
+    def __init__(self, pos=(0,0), radius=30):
         print("Striker Exist")
         self.pos = pos
-        self.size = size
+        self.radius = radius
         self.color = pygame.Color(0,255,0)
-        self.surface = pygame.Surface((self.size,self.size),pygame.SRCALPHA)
-        self.shape = pygame.Rect(0, 0, self.size, self.size)
+        self.surface = pygame.Surface((self.radius,self.radius),
+                                                pygame.SRCALPHA)
+        self.shape = pygame.Rect(0, 0, self.radius, self.radius)
     def update(self,surface):
         x,y = pygame.mouse.get_pos()
-        x = min(x,SCRNWIDTH-self.size)
-        y = max(min(y,SCRNHEIGHT-self.size),SCRNHEIGHT//2)
+        x =  min(x,SCRNWIDTH-self.radius)
+        y = max(min(y,SCRNHEIGHT-self.radius),SCRNHEIGHT//2)
         self.pos = (x,y)
         self.draw(surface)
     def draw(self,surface):
         pygame.draw.ellipse(self.surface, self.color, self.shape)
         surface.blit(self.surface,self.pos)
+
+
+        
 def main():
 
     pygame.init()
