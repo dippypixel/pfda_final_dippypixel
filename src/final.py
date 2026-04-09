@@ -1,5 +1,6 @@
 import pygame
 import time
+
 #------------------------------------------------------------------------
 # CONSTANTS
 
@@ -7,10 +8,10 @@ SCRNWIDTH = 720
 SCRNHEIGHT = 1080
 #------------------------------------------------------------------------
 class Striker(pygame.sprite.Sprite):
-    def __init__(self, pos=(0,0), radius=30):
+    def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
-        self.radius = radius
+        self.radius = 30
         self.image = pygame.Surface((self.radius*2,self.radius*2),pygame.SRCALPHA)
         self.rect = self.image.get_rect() 
         self.color = (0,0,255)
@@ -32,14 +33,14 @@ class Striker(pygame.sprite.Sprite):
      
     def draw(self,surface):
         self.rect.center = self.pos
-        surface.blit(self.image,self.pos)
+        surface.blit(self.image,self.rect)
 
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, pos=(0,0), radius=30):
+    def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
-        self.radius = radius
+        self.radius = 60
         self.pos_x,self.pos_y = self.pos
         self.vel_x = 0
         self.vel_y = 0
@@ -63,12 +64,13 @@ class Ball(pygame.sprite.Sprite):
 
     def draw(self,surface):
         self.rect.center = self.pos
-        surface.blit(self.image,self.pos)
+        surface.blit(self.image,self.rect)
 
     def ball_striker_collision(self,striker):
             if abs(striker.vel_x)+abs(striker.vel_y)> 5:
                 self.vel_x,self.vel_y = striker.vel_x,striker.vel_y
             else:
+                self.vel_x = (self.rect.centerx-striker.rect.centerx)*.1
                 self.vel_y *= -.7
                 self.vel_y = min(self.vel_y,-2)
             print("Hit Paddle")
@@ -123,7 +125,6 @@ def main():
         screen.fill(black)
         ball.update(dt,screen)
         striker.update(screen)
-        print(f"{striker.vel_x,striker.vel_y}")
         collide_circle_group = pygame.sprite.spritecollide(striker,ball_group,False,pygame.sprite.collide_circle)
         for circle in collide_circle_group:
             if not circle.was_colliding:
