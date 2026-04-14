@@ -198,17 +198,6 @@ def main():
         ball.update(dt)
         striker.update()
         # blockmanager._draw_blocks(screen)
-    # ball_striker_collide = pygame.sprite.spritecollide(striker,ball_group,False,pygame.sprite.collide_mask)
-
-    # for circle in ball_striker_collide:
-    #     if not circle.was_colliding:
-    #         circle.pos = circle.pos[0],(striker.pos[1]-(circle.radius*2)+striker.vel_y)
-    #         circle.ball_striker_collision(striker)
-    #         print("Bounced!")
-    #     circle.was_colliding = True
-    # for circle in ball_group:
-    #     if circle not in ball_striker_collide:
-    #         circle.was_colliding = False
 
         ball.draw(screen)   
         striker.draw(screen)  
