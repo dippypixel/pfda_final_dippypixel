@@ -12,6 +12,8 @@ class Striker(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.radius = 30
+        self.vel_x = 0
+        self.vel_y = 0
 
         self.image = pygame.image.load("striker.png").convert_alpha()
         self.rect = self.image.get_rect()
@@ -80,13 +82,13 @@ class Ball(pygame.sprite.Sprite):
             if self.pos[1] <= 0 + self.radius and self.vel_y < 0:
                 self.vel_y *= -.7
                 self.colliding_wall = True
-                print("Hit Cieling")
+                #print("Hit Cieling")
                 self.fast = False
             if (self.pos[0] <= 0 + self.radius//2
                 or self.pos[0]  >= SCRNWIDTH - self.radius*2):
                 self.vel_x *= -.7
                 self.colliding_wall = True
-                print("Hit Wall")
+                #print("Hit Wall")
         else:
             self.colliding_wall = False
 
@@ -195,30 +197,39 @@ def main():
             if event.type == pygame.QUIT:
                 running = False   
         screen.fill(black)
+
+        #checking for collision
+        check_ball_striker_collision(ball,striker_group)
+        #updating
         ball.update(dt)
         striker.update()
-        # blockmanager._draw_blocks(screen)
-
+        #blockmanager._draw_blocks(screen)
+        #drawing on screen
+        #pygame.draw.line(screen,pygame.Color(255,0,0),(ball.pos[0],ball.pos[1]),(striker.pos[0],striker.pos[1]),10)
         ball.draw(screen)   
         striker.draw(screen)  
-
-        if pygame.sprite.spritecollide(ball, striker_group, False, pygame.sprite.collide_mask):
-            if not ball.was_colliding:
-                ball.ball_striker_collision(striker)
-                print("Bounced!")
-            ball.was_colliding = True
-        else:
-            ball.was_colliding = False
-
-        # ball_block_collide = pygame.sprite.spritecollide(ball,blockmanager.block_group,True)
-        # if ball_block_collide:
-        #     ball.vel_y *= -.9   
-
     
 
         pygame.display.flip()
         dt = clock.tick(60)
     pygame.quit()
+
+def check_ball_striker_collision(ball, striker_group):
+    striker = striker_group.sprites()[0]
+    if pygame.sprite.spritecollide(ball, striker_group, False, pygame.sprite.collide_mask):
+        striker_pos = pygame.math.Vector2((striker.pos[0] + striker.vel_x,striker.pos[1] + (striker.vel_y*-4)))
+        ball_pos = pygame.math.Vector2(ball.pos)
+        angle = striker_pos - ball_pos
+        if angle[0] !=0 and angle[0] !=0:
+            angle.normalize()
+            print(angle)
+            ball.pos += angle*-.12
+        if not ball.was_colliding:
+            ball.ball_striker_collision(striker)
+           # print("Bounced!")
+        ball.was_colliding = True
+    else:
+        ball.was_colliding = False    
 
 
 if __name__ == "__main__":
