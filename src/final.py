@@ -12,13 +12,12 @@ class Striker(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.radius = 30
-        self.image = pygame.Surface((self.radius*2,self.radius*2),pygame.SRCALPHA)
-        self.rect = self.image.get_rect() 
-        self.color = (0,0,255)
-        self.colorbg = (255,0,0)
-        #self.image.fill(self.colorbg)
-        pygame.draw.circle(self.image, self.color,
-                           (self.radius,self.radius),self.radius)
+
+        self.image = pygame.image.load("striker.png").convert_alpha()
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+        #self.mask_image = self.mask.to_surface()
+
         self.wallhit = False
 
     def update(self):
@@ -44,15 +43,15 @@ class Ball(pygame.sprite.Sprite):
         self.pos_x,self.pos_y = self.pos
         self.vel_x = 0
         self.vel_y = 0
-        self.image = pygame.Surface((self.radius*2,self.radius*2),pygame.SRCALPHA)
-        self.rect = self.image.get_rect() 
-        self.colorbg = (0,0,255)
-        self.color = (0,255,0)
+
+        self.image = pygame.image.load("ball.png").convert_alpha()
+        self.rect = self.image.get_rect()
+        self.ball_mask = pygame.mask.from_surface(self.image)
+        #self.ball_mask_image = self.ball_mask.to_surface()
+
         self.was_colliding = False
         self.colliding_wall = False
         #self.image.fill(self.colorbg)
-        pygame.draw.circle(self.image, self.color,
-                           (self.radius,self.radius),self.radius)
         
 
     def update(self,dt):
@@ -180,14 +179,14 @@ def main():
     #OBJECTS
     screen= pygame.display.set_mode(resolution)
 
-    blockmanager = BlockManager()
-    blockmanager.spawn_blocks()
+    # blockmanager = BlockManager()
+    # blockmanager.spawn_blocks()
 
     striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//2)) 
     ball = Ball((SCRNWIDTH//2,SCRNHEIGHT//2))
 
     ball_group = pygame.sprite.Group(ball)
-    #striker_group = pygame.sprite.Group(striker)
+    striker_group = pygame.sprite.Group(striker)
 
     running = True
     while running:
@@ -198,24 +197,33 @@ def main():
         screen.fill(black)
         ball.update(dt)
         striker.update()
-        blockmanager._draw_blocks(screen)
-        ball_striker_collide = pygame.sprite.spritecollide(striker,ball_group,False,pygame.sprite.collide_circle)
+        # blockmanager._draw_blocks(screen)
+    # ball_striker_collide = pygame.sprite.spritecollide(striker,ball_group,False,pygame.sprite.collide_mask)
 
-        for circle in ball_striker_collide:
-            if not circle.was_colliding:
-                circle.pos = circle.pos[0],(striker.pos[1]-(circle.radius*2)+striker.vel_y)
-                circle.ball_striker_collision(striker)
-                print("Bounced!")
-            circle.was_colliding = True
-        for circle in ball_group:
-            if circle not in ball_striker_collide:
-                circle.was_colliding = False
+    # for circle in ball_striker_collide:
+    #     if not circle.was_colliding:
+    #         circle.pos = circle.pos[0],(striker.pos[1]-(circle.radius*2)+striker.vel_y)
+    #         circle.ball_striker_collision(striker)
+    #         print("Bounced!")
+    #     circle.was_colliding = True
+    # for circle in ball_group:
+    #     if circle not in ball_striker_collide:
+    #         circle.was_colliding = False
 
         ball.draw(screen)   
         striker.draw(screen)  
-        ball_block_collide = pygame.sprite.spritecollide(ball,blockmanager.block_group,True)
-        if ball_block_collide:
-            ball.vel_y *= -.9   
+
+        if pygame.sprite.spritecollide(ball, striker_group, False, pygame.sprite.collide_mask):
+            if not ball.was_colliding:
+                ball.ball_striker_collision(striker)
+                print("Bounced!")
+            ball.was_colliding = True
+        else:
+            ball.was_colliding = False
+
+        # ball_block_collide = pygame.sprite.spritecollide(ball,blockmanager.block_group,True)
+        # if ball_block_collide:
+        #     ball.vel_y *= -.9   
 
     
 
