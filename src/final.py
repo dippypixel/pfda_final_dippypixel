@@ -24,7 +24,7 @@ class Striker(pygame.sprite.Sprite):
 
     def update(self):
         x,y = pygame.mouse.get_pos()
-        x =  min(x,SCRNWIDTH-self.radius)
+        x =  min(x+self.radius,SCRNWIDTH-self.radius)
         y = max(min(y,SCRNHEIGHT-self.radius),SCRNHEIGHT//2)
 
         self.vel_x = x - self.pos[0]
@@ -67,15 +67,6 @@ class Ball(pygame.sprite.Sprite):
         self.rect.center = self.pos
         surface.blit(self.image,self.rect)
 
-    def ball_striker_collision(self,striker):
-            if abs(striker.vel_x)+abs(striker.vel_y)> 5:
-                self.vel_x,self.vel_y = striker.vel_x,striker.vel_y
-            else:
-                self.vel_x = (self.rect.centerx-striker.rect.centerx)*.1
-                self.vel_y *= -.7
-                self.vel_y = min(self.vel_y,-2)
-            print("Hit Paddle")
-
     def wall_collision(self):
         if self.colliding_wall == False:
             #from top
@@ -84,11 +75,16 @@ class Ball(pygame.sprite.Sprite):
                 self.colliding_wall = True
                 #print("Hit Cieling")
                 self.fast = False
-            if (self.pos[0] <= 0 + self.radius//2
-                or self.pos[0]  >= SCRNWIDTH - self.radius*2):
+            if (self.pos[0] <= 0 + self.rect.width//2 or 
+                self.pos[0]  >= SCRNWIDTH - self.rect.width//2):
                 self.vel_x *= -.7
                 self.colliding_wall = True
                 #print("Hit Wall")
+            if self.pos[0] <= 0 + self.rect.width//2:
+                self.pos = (self.rect.width//2,self.pos[1])
+            if self.pos[0]  >= SCRNWIDTH - self.rect.width//2:
+                self.pos = (SCRNWIDTH - self.rect.width//2,self.pos[1])
+
         else:
             self.colliding_wall = False
 
@@ -172,7 +168,8 @@ def main():
             #checking for collision
             if ball.pos[1]<SCRNHEIGHT//2:
                 check_ball_block_collision(ball,blockmanager.block_group)
-            check_ball_striker_collision(ball,striker_group)
+            else:
+                check_ball_striker_collision(ball,striker_group)
             #updating
             ball.update(dt)
             striker.update()
@@ -189,18 +186,39 @@ def main():
 def check_ball_striker_collision(ball, striker_group):
     striker = striker_group.sprites()[0]
     if pygame.sprite.spritecollide(ball, striker_group, False, pygame.sprite.collide_mask):  
-        if not ball.was_colliding:
-            ball.ball_striker_collision(striker)
-           # print("Bounced!")
+        striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,striker.pos[1]+striker.vel_y))
+        ball_pos = pygame.math.Vector2(ball.pos)
+        diff = striker_pos - ball_pos
+        dist = diff.length()
+        mindist = ball.rect.height//2 + striker.rect.height//2
+        if dist !=0:
+            overlap = mindist - dist
+            normal = diff.normalize()
+            ball.pos -= normal*overlap
+            if not ball.was_colliding:
+                    ball.vel_x = normal[0]+striker.vel_x
+                    ball.vel_y = normal[1]+(striker.vel_y/2)
+                    ball.vel_y = min(max(ball.vel_y,-60),-2)
         ball.was_colliding = True
     else:
         ball.was_colliding = False    
 
 
 def check_ball_block_collision(ball, block_group):
-    if pygame.sprite.spritecollide(ball, block_group, True, pygame.sprite.collide_mask):  
+    collided_block_list = pygame.sprite.spritecollide(ball, block_group, True, pygame.sprite.collide_mask)
+    if collided_block_list:
+        print(collided_block_list)
         if not ball.was_colliding:
-            ball.vel_y *= -.7
+            for idx,block in enumerate(collided_block_list):
+                block_pos = pygame.math.Vector2((block.rect.centerx,block.rect.centery))
+            ball_pos = pygame.math.Vector2(ball.pos)
+            angle = block_pos - ball_pos
+            if angle[0] !=0 and angle[0] !=0:
+                angle.normalize()
+                print(angle)
+                if -angle[1]*(-ball.vel_y/60) > 0:
+                    ball.vel_x = angle[0]*-(ball.vel_x/60)
+                    ball.vel_y = -angle[1]*(-ball.vel_y/60)
         ball.was_colliding = True
     else:
         ball.was_colliding = False            
