@@ -90,7 +90,7 @@ class Ball(pygame.sprite.Sprite):
 
     def reset_position(self):
             if self.pos[1] >= SCRNHEIGHT+self.radius:
-                self.pos = (SCRNWIDTH//2,SCRNHEIGHT//5)
+                self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
                 self.vel_x = 0
                 self.vel_y = 5
 #---------------------------------------------------------------------------
@@ -119,14 +119,16 @@ class BlockManager():
     def spawn_blocks(self):
         x,y=self.pos[0],self.pos[1]
         for column in range(0,10):
-            print("column")
-            for row in range(0,SCRNWIDTH-self.spacingx,self.spacingy):
+            for row in range(0,SCRNWIDTH,self.spacingx):
                 x+=self.spacingx
                 self.pos = (x,y)
-                row = Block(self.pos,self.spacingy)   
-                self.block_group.add(row)
-            x = -30
+                #row = Block(self.pos,self.spacingy)   
+                #self.block_group.add(row)
+                self.block_list.append(self.pos)
+                #print(self.block_list)
+            x = -self.spacingx//2
             y+=30
+        return True
 
     def _draw_blocks(self,surface):
         for idx,block in enumerate(self.block_group):
@@ -148,23 +150,43 @@ def main():
     screen= pygame.display.set_mode(resolution)
 
     blockmanager = BlockManager()
-    blockmanager.spawn_blocks()
 
-    striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//2)) 
+    striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//1.2)) 
     ball = Ball((SCRNWIDTH//2,SCRNHEIGHT//2))
 
     ball_group = pygame.sprite.Group(ball)
     striker_group = pygame.sprite.Group(striker)
 
     running = True
-    game_running = True
+    game_running = False
+    big_hit_occurring = False
+    spawning_blocks = True
+    blockmanager.spawn_blocks()
+    spawn_timer = 0
+    block_idx = 0
     while running:
         #QUIT DETECTION
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False   
         screen.fill(black)
-        if game_running:
+        #SPAWNING BLOCKS
+        if spawning_blocks:
+            if block_idx < len(blockmanager.block_list):
+                spawn_timer += 1
+                if spawn_timer>=1:
+                        row = Block(blockmanager.block_list[block_idx],blockmanager.spacingy)   
+                        blockmanager.block_group.add(row)
+                        block_idx+=1
+                        spawn_timer = 0
+                blockmanager._draw_blocks(screen)
+                ball.draw(screen)   
+                striker.draw(screen)                 
+            else:
+                 spawning_blocks = False
+                 spawn_timer=0
+        
+        if not spawning_blocks and not big_hit_occurring:
             #checking for collision
             if ball.pos[1]<SCRNHEIGHT//2:
                 check_ball_block_collision(ball,blockmanager.block_group)
@@ -198,8 +220,8 @@ def check_ball_striker_collision(ball, striker_group):
             if not ball.was_colliding:
                     ball.vel_x = normal[0]+striker.vel_x
                     ball.vel_y = normal[1]+(striker.vel_y/2)
-                    ball.vel_y = min(max(ball.vel_y,-60),-2)
-        ball.was_colliding = True
+                    ball.vel_y = min(max(ball.vel_y,-60),-2)                 
+                    ball.was_colliding = True
     else:
         ball.was_colliding = False    
 
