@@ -1,5 +1,5 @@
 import pygame
-import time
+import random
 
 #------------------------------------------------------------------------
 # CONSTANTS
@@ -62,7 +62,8 @@ class Ball(pygame.sprite.Sprite):
         self.vel_y += (dt*0.01)  
 
     def play_bounce_sfx(self,volume):
-        bounce_sfx = pygame.mixer.Sound("bounce.wav")
+        sounds = ["bounce.wav","bounce1.wav","bounce2.wav"]
+        bounce_sfx = pygame.mixer.Sound(random.choice(sounds))
         bounce_sfx.set_volume(volume)
         bounce_sfx.play()
 
