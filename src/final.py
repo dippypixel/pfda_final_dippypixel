@@ -61,16 +61,23 @@ class Ball(pygame.sprite.Sprite):
     def apply_gravity(self,dt):
         self.vel_y += (dt*0.01)  
 
+    def play_bounce_sfx(self,volume):
+        bounce_sfx = pygame.mixer.Sound("bounce.wav")
+        bounce_sfx.set_volume(volume)
+        bounce_sfx.play()
+
     def wall_collision(self):
         if self.colliding_wall == False:
             #colliding from the top
             if self.pos[1] <= 0 + self.radius and self.vel_y < 0:
+                self.play_bounce_sfx(0.2)
                 self.vel_y *= -.7
                 self.colliding_wall = True
                 self.fast = False
             #colliding with the sides
             if (self.pos[0] <= 0 + self.rect.width//2 or 
                 self.pos[0]  >= SCRNWIDTH - self.rect.width//2):
+                self.play_bounce_sfx(0.2)
                 self.vel_x *= -.7
                 self.colliding_wall = True
             #reseting position if it goes past the walls
@@ -148,7 +155,6 @@ def main():
     block_idx = 0
 
     #OBJECTS
-
     screen= pygame.display.set_mode(resolution)
 
     blockmanager = BlockManager()
@@ -228,6 +234,7 @@ def check_ball_striker_collision(ball, striker_group):
             ball.pos -= bs_normal*bs_overlap
             #if it wasnt originally colliding
             if not ball.colliding_withstriker:
+                    ball.play_bounce_sfx(1)
                     #set ball velocity to the strikers velocity
                     ball.vel_x = -bs_normal[0]+striker.vel_x
                     ball.vel_y = striker.vel_y
@@ -241,12 +248,15 @@ def check_ball_striker_collision(ball, striker_group):
 
 
 def check_ball_block_collision(ball, block_group):
-    #gets a list of all of the blocsk
+    #gets a list of all of the blocks
     collided_block_list = pygame.sprite.spritecollide(ball, block_group, True, pygame.sprite.collide_mask)
+    #sound stuff
+    delete_sfx = pygame.mixer.Sound("blockhit.wav")
+    delete_sfx.set_volume(0.5)
 
     if collided_block_list:
-        print(collided_block_list)
         if not ball.colliding_withblock:
+            #plays sound
             #set the position of the first block that it collides list
             block = collided_block_list[0]
             #set the positions of each
@@ -262,6 +272,7 @@ def check_ball_block_collision(ball, block_group):
                     ball.vel_x = bb_angle[0]*-(ball.vel_x)
                     ball.vel_y = -bb_angle[1]*(-ball.vel_y)
                     print(f"({ball.vel_x},{ball.vel_y})")
+                    delete_sfx.play()
         ball.colliding_withblock = True
     else:
         ball.colliding_withblock = False            
