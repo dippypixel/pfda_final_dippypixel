@@ -18,7 +18,6 @@ class Striker(pygame.sprite.Sprite):
         self.image = pygame.image.load("striker.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
-        #self.mask_image = self.mask.to_surface()
 
         self.wallhit = False
 
@@ -30,7 +29,6 @@ class Striker(pygame.sprite.Sprite):
         self.vel_x = x - self.pos[0]
         self.vel_y = y - self.pos[1]
         self.pos = (x,y)
-        #self.draw(surface)  
      
     def draw(self,surface):
         self.rect.center = self.pos
@@ -49,34 +47,33 @@ class Ball(pygame.sprite.Sprite):
         self.image = pygame.image.load("ball.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.ball_mask = pygame.mask.from_surface(self.image)
-        #self.ball_mask_image = self.ball_mask.to_surface()
 
-        self.was_colliding = False
+        self.colliding_withstriker = False
+        self.colliding_withblock = False
         self.colliding_wall = False
-        #self.image.fill(self.colorbg)
     
     def update(self,dt):
         self.apply_gravity(dt)
         self.pos = (self.pos[0]+self.vel_x,self.pos[1]+self.vel_y)
         self.wall_collision()
-        self.reset_position()
-        #self.draw(surface)     
+        self.reset_position()  
+
     def apply_gravity(self,dt):
         self.vel_y += (dt*0.01)  
 
     def wall_collision(self):
         if self.colliding_wall == False:
-            #from top
+            #colliding from the top
             if self.pos[1] <= 0 + self.radius and self.vel_y < 0:
                 self.vel_y *= -.7
                 self.colliding_wall = True
-                #print("Hit Cieling")
                 self.fast = False
+            #colliding with the sides
             if (self.pos[0] <= 0 + self.rect.width//2 or 
                 self.pos[0]  >= SCRNWIDTH - self.rect.width//2):
                 self.vel_x *= -.7
                 self.colliding_wall = True
-                #print("Hit Wall")
+            #reseting position if it goes past the walls
             if self.pos[0] <= 0 + self.rect.width//2:
                 self.pos = (self.rect.width//2,self.pos[1])
             if self.pos[0]  >= SCRNWIDTH - self.rect.width//2:
@@ -87,6 +84,7 @@ class Ball(pygame.sprite.Sprite):
 
     def reset_position(self):
             if self.pos[1] >= SCRNHEIGHT+self.radius:
+                self.colliding_withstriker = False 
                 self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
                 self.vel_x = 0
                 self.vel_y = 5
@@ -211,44 +209,62 @@ def main():
     pygame.quit()
 
 def check_ball_striker_collision(ball, striker_group):
+    #set striker varaible 
     striker = striker_group.sprites()[0]
+    #if the ball is touching the striker
     if pygame.sprite.spritecollide(ball, striker_group, False, pygame.sprite.collide_mask):  
-        striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,striker.pos[1]+striker.vel_y))
+        #set positions of each ball
+        striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,striker.pos[1]))
         ball_pos = pygame.math.Vector2(ball.pos)
-        diff = striker_pos - ball_pos
-        dist = diff.length()
-        mindist = ball.rect.height//2 + striker.rect.height//2
-        if dist !=0:
-            overlap = mindist - dist
-            normal = diff.normalize()
-            ball.pos -= normal*overlap
-            if not ball.was_colliding:
-                    ball.vel_x = -normal[0]+striker.vel_x
+        #determine the distance 
+        bs_diff = striker_pos - ball_pos
+        bs_dist = bs_diff.length()
+        bs_mindist = ball.rect.height//2 + striker.rect.height//2
+        #prevenets normalizing a zero variable
+        if bs_dist !=0:
+            bs_overlap = (bs_mindist - bs_dist)
+            bs_normal = bs_diff.normalize()
+            #pops out ball before it renders
+            ball.pos -= bs_normal*bs_overlap
+            #if it wasnt originally colliding
+            if not ball.colliding_withstriker:
+                    #set ball velocity to the strikers velocity
+                    ball.vel_x = -bs_normal[0]+striker.vel_x
                     ball.vel_y = striker.vel_y
-                    ball.vel_y = min(max(ball.vel_y,-60),-2)                 
-                    ball.was_colliding = True
+                    #cap vertical velocity at -60
+                    ball.vel_y = min(max(ball.vel_y,-60),-2)    
+                    #set it as true to prevent it repeating each frame             
+                    ball.colliding_withstriker = True 
+    #if ball is not touching the striker, set it to 0.
     else:
-        ball.was_colliding = False    
+        ball.colliding_withstriker = False     
 
 
 def check_ball_block_collision(ball, block_group):
+    #gets a list of all of the blocsk
     collided_block_list = pygame.sprite.spritecollide(ball, block_group, True, pygame.sprite.collide_mask)
+
     if collided_block_list:
         print(collided_block_list)
-        if not ball.was_colliding:
-            for idx,block in enumerate(collided_block_list):
-                block_pos = pygame.math.Vector2((block.rect.centerx,block.rect.centery))
+        if not ball.colliding_withblock:
+            #set the position of the first block that it collides list
+            block = collided_block_list[0]
+            #set the positions of each
+            block_pos = pygame.math.Vector2((block.rect.centerx,block.rect.centery))
             ball_pos = pygame.math.Vector2(ball.pos)
-            angle = block_pos - ball_pos
-            if angle[0] !=0 and angle[0] !=0:
-                angle.normalize()
-                print(angle)
-                if -angle[1]*(-ball.vel_y/60) > 0:
-                    ball.vel_x = angle[0]*-(ball.vel_x/50)
-                    ball.vel_y = -angle[1]*(-ball.vel_y/50)
-        ball.was_colliding = True
+            #calculates the different between the positions 
+            bb_diff = block_pos - ball_pos
+            #to avoid normalizing 0
+            if bb_diff[0] !=0:
+                #calcuates angle the ball will go in
+                bb_angle = bb_diff.normalize()
+                if -bb_angle[1]*(-ball.vel_y/60) > 0:
+                    ball.vel_x = bb_angle[0]*-(ball.vel_x)
+                    ball.vel_y = -bb_angle[1]*(-ball.vel_y)
+                    print(f"({ball.vel_x},{ball.vel_y})")
+        ball.colliding_withblock = True
     else:
-        ball.was_colliding = False            
+        ball.colliding_withblock = False            
 
 
 if __name__ == "__main__":
