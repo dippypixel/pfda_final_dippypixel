@@ -54,18 +54,15 @@ class Ball(pygame.sprite.Sprite):
         self.was_colliding = False
         self.colliding_wall = False
         #self.image.fill(self.colorbg)
-        
-
+    
     def update(self,dt):
-        self.vel_y += (dt*0.01)
+        self.apply_gravity(dt)
         self.pos = (self.pos[0]+self.vel_x,self.pos[1]+self.vel_y)
         self.wall_collision()
         self.reset_position()
-        #self.draw(surface)       
-
-    def draw(self,surface):
-        self.rect.center = self.pos
-        surface.blit(self.image,self.rect)
+        #self.draw(surface)     
+    def apply_gravity(self,dt):
+        self.vel_y += (dt*0.01)  
 
     def wall_collision(self):
         if self.colliding_wall == False:
@@ -93,6 +90,9 @@ class Ball(pygame.sprite.Sprite):
                 self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
                 self.vel_x = 0
                 self.vel_y = 5
+    def draw(self,surface):
+        self.rect.center = self.pos
+        surface.blit(self.image,self.rect)
 #---------------------------------------------------------------------------
 class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0), spacing=30):
@@ -110,7 +110,7 @@ class Block(pygame.sprite.Sprite):
 #---------------------------------------------------------------------------
 class BlockManager():
     def __init__(self):
-        self.block_list = []
+        self.block_poslist = []
         self.block_group = pygame.sprite.Group()
         self.spacingx = 60
         self.spacingy = 30
@@ -122,10 +122,7 @@ class BlockManager():
             for row in range(0,SCRNWIDTH,self.spacingx):
                 x+=self.spacingx
                 self.pos = (x,y)
-                #row = Block(self.pos,self.spacingy)   
-                #self.block_group.add(row)
-                self.block_list.append(self.pos)
-                #print(self.block_list)
+                self.block_poslist.append(self.pos)
             x = -self.spacingx//2
             y+=30
         return True
@@ -142,11 +139,18 @@ def main():
     clock= pygame.time.Clock()
     
     #VALUES
+
     dt = 0.0
     resolution =(SCRNWIDTH,SCRNHEIGHT)
     black = pygame.Color(0,0,0)
+    running = True
+    big_hit_occurring = False
+    spawning_blocks = True
+    spawn_timer = 0
+    block_idx = 0
 
     #OBJECTS
+
     screen= pygame.display.set_mode(resolution)
 
     blockmanager = BlockManager()
@@ -154,28 +158,27 @@ def main():
     striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//1.2)) 
     ball = Ball((SCRNWIDTH//2,SCRNHEIGHT//2))
 
-    ball_group = pygame.sprite.Group(ball)
-    striker_group = pygame.sprite.Group(striker)
+    ball_group = pygame.sprite.GroupSingle(ball)
+    striker_group = pygame.sprite.GroupSingle(striker)
 
-    running = True
-    game_running = False
-    big_hit_occurring = False
-    spawning_blocks = True
+    #INITIALIZE
+
     blockmanager.spawn_blocks()
-    spawn_timer = 0
-    block_idx = 0
+
     while running:
+    
         #QUIT DETECTION
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False   
         screen.fill(black)
+
         #SPAWNING BLOCKS
         if spawning_blocks:
-            if block_idx < len(blockmanager.block_list):
+            if block_idx < len(blockmanager.block_poslist):
                 spawn_timer += 1
                 if spawn_timer>=1:
-                        row = Block(blockmanager.block_list[block_idx],blockmanager.spacingy)   
+                        row = Block(blockmanager.block_poslist[block_idx],blockmanager.spacingy)   
                         blockmanager.block_group.add(row)
                         block_idx+=1
                         spawn_timer = 0
@@ -185,19 +188,21 @@ def main():
             else:
                  spawning_blocks = False
                  spawn_timer=0
-        
+
+        #game running
         if not spawning_blocks and not big_hit_occurring:
+
             #checking for collision
             if ball.pos[1]<SCRNHEIGHT//2:
                 check_ball_block_collision(ball,blockmanager.block_group)
-            else:
-                check_ball_striker_collision(ball,striker_group)
+            check_ball_striker_collision(ball,striker_group)
+
             #updating
             ball.update(dt)
             striker.update()
             blockmanager._draw_blocks(screen)
+
             #drawing on screen
-            #pygame.draw.line(screen,pygame.Color(255,0,0),(ball.pos[0],ball.pos[1]),(striker.pos[0],striker.pos[1]),10)
             ball.draw(screen)   
             striker.draw(screen)  
 
@@ -218,8 +223,8 @@ def check_ball_striker_collision(ball, striker_group):
             normal = diff.normalize()
             ball.pos -= normal*overlap
             if not ball.was_colliding:
-                    ball.vel_x = normal[0]+striker.vel_x
-                    ball.vel_y = normal[1]+(striker.vel_y/2)
+                    ball.vel_x = -normal[0]+striker.vel_x
+                    ball.vel_y = striker.vel_y
                     ball.vel_y = min(max(ball.vel_y,-60),-2)                 
                     ball.was_colliding = True
     else:
@@ -239,8 +244,8 @@ def check_ball_block_collision(ball, block_group):
                 angle.normalize()
                 print(angle)
                 if -angle[1]*(-ball.vel_y/60) > 0:
-                    ball.vel_x = angle[0]*-(ball.vel_x/60)
-                    ball.vel_y = -angle[1]*(-ball.vel_y/60)
+                    ball.vel_x = angle[0]*-(ball.vel_x/50)
+                    ball.vel_y = -angle[1]*(-ball.vel_y/50)
         ball.was_colliding = True
     else:
         ball.was_colliding = False            
