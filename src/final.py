@@ -124,7 +124,7 @@ class BlockManager():
         self.spacingy = 30
         self.pos = (-30,self.spacingy)
 
-    def spawn_blocks(self):
+    def map_block_positions(self):
         x,y=self.pos[0],self.pos[1]
         for column in range(0,10):
             for row in range(0,SCRNWIDTH,self.spacingx):
@@ -179,9 +179,8 @@ def main():
     lives_text_rect = lives_text.get_rect()
     gameover_font_obj = pygame.font.Font(sys_font,40)
 
-    #INITIALIZE
 
-    blockmanager.spawn_blocks()
+    blockmanager.map_block_positions()
 
     while running:
     
