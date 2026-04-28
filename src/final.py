@@ -38,6 +38,7 @@ class Striker(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
+        self.lives = 3
         self.pos = pos
         self.radius = 30
         self.pos_x,self.pos_y = self.pos
@@ -96,6 +97,7 @@ class Ball(pygame.sprite.Sprite):
                 self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
                 self.vel_x = 0
                 self.vel_y = 5
+                self.lives -= 1
     def draw(self,surface):
         self.rect.center = self.pos
         surface.blit(self.image,self.rect)
@@ -140,20 +142,23 @@ class BlockManager():
 def main():
 
     pygame.init()
+    pygame.font.init
     pygame.display.set_caption("Breakout:Force")
     pygame.mouse.set_visible(False)
     clock= pygame.time.Clock()
     
     #VALUES
-
     dt = 0.0
     resolution =(SCRNWIDTH,SCRNHEIGHT)
     black = pygame.Color(0,0,0)
-    running = True
-    big_hit_occurring = False
-    spawning_blocks = True
     spawn_timer = 0
     block_idx = 0
+
+    #BOOLEANS
+    running = True
+    playing = False
+    game_over = False
+    spawning_blocks = True
 
     #OBJECTS
     screen= pygame.display.set_mode(resolution)
@@ -165,6 +170,13 @@ def main():
 
     ball_group = pygame.sprite.GroupSingle(ball)
     striker_group = pygame.sprite.GroupSingle(striker)
+
+    sys_font = pygame.font.get_default_font()
+    lives_font_obj = pygame.font.Font(sys_font,20)
+    lives_text = lives_font_obj.render(f"Lives: {ball.lives}", 
+                                    False,(255,255,255))
+    lives_text_rect = lives_text.get_rect()
+    gameover_font_obj = pygame.font.Font(sys_font,40)
 
     #INITIALIZE
 
@@ -193,9 +205,10 @@ def main():
             else:
                  spawning_blocks = False
                  spawn_timer=0
+                 playing = True
 
         #game running
-        if not spawning_blocks and not big_hit_occurring:
+        if playing == True:
 
             #checking for collision
             if ball.pos[1]<SCRNHEIGHT//2:
@@ -206,10 +219,22 @@ def main():
             ball.update(dt)
             striker.update()
             blockmanager._draw_blocks(screen)
+            lives_text = lives_font_obj.render(f"Lives: {ball.lives}", False,(255,255,255))
 
             #drawing on screen
             ball.draw(screen)   
-            striker.draw(screen)  
+            striker.draw(screen)
+            screen.blit(lives_text,(0,SCRNHEIGHT-lives_text_rect.height))
+
+            #checking for gameover
+            if ball.lives < 1:
+                playing = False
+                game_over = True
+        if game_over == True and not playing:
+            gameover_text = gameover_font_obj.render(f"GAME OVER", 
+                                                False,(255,255,255))
+            gameover_rect = gameover_text.get_rect()
+            screen.blit(gameover_text,(SCRNWIDTH//2-(gameover_rect.width//2),SCRNHEIGHT//2))
 
         pygame.display.flip()
         dt = clock.tick(60)
