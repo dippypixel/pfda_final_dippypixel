@@ -153,6 +153,7 @@ def main():
     black = pygame.Color(0,0,0)
     spawn_timer = 0
     block_idx = 0
+    blocks_smashed = 0
 
     #BOOLEANS
     running = True
@@ -203,7 +204,8 @@ def main():
                         spawn_timer = 0
                 blockmanager._draw_blocks(screen)
                 ball.draw(screen)   
-                striker.draw(screen)                 
+                striker.draw(screen)     
+                total_blocks = block_idx            
             else:
                  spawning_blocks = False
                  spawn_timer=0
@@ -230,17 +232,14 @@ def main():
 
             #checking for gameover
             if ball.lives < 1:
+                blocks_smashed = len(blockmanager.block_poslist) - len(blockmanager.block_group)
                 playing = False
                 game_over = True
         if game_over == True and not playing:
-            gameover_text = gameover_font_obj.render(f"GAME OVER", 
+            gameover_text = gameover_font_obj.render(f"GAME OVER \n you have smashed {blocks_smashed} out of {block_idx}!", 
                                                 False,(255,255,255))
             gameover_rect = gameover_text.get_rect()
             screen.blit(gameover_text,(SCRNWIDTH//2-(gameover_rect.width//2),SCRNHEIGHT//2))
-            #add text that says press R to restart
-            #calculate the current list of blocks when the game ends
-            #subtract it from the total
-            #add text that tells you how many blocks you destroyed out of the total
 
         #add win condition
 
