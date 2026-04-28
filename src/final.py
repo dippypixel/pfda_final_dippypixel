@@ -187,7 +187,9 @@ def main():
         #QUIT DETECTION
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False   
+                running = False 
+            #if r key is pressed and game over is true
+                #restart the game by setting playing to false and spawning blocks to true
         screen.fill(black)
 
         #SPAWNING BLOCKS
@@ -235,6 +237,12 @@ def main():
                                                 False,(255,255,255))
             gameover_rect = gameover_text.get_rect()
             screen.blit(gameover_text,(SCRNWIDTH//2-(gameover_rect.width//2),SCRNHEIGHT//2))
+            #add text that says press R to restart
+            #calculate the current list of blocks when the game ends
+            #subtract it from the total
+            #add text that tells you how many blocks you destroyed out of the total
+
+        #add win condition
 
         pygame.display.flip()
         dt = clock.tick(60)
