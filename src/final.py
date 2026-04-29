@@ -104,50 +104,47 @@ class Ball(pygame.sprite.Sprite):
 #---------------------------------------------------------------------------
 class Particle():
 
-    def __init__(self, pos=(0,0), size=15, life=1000):
+    def __init__(self, pos=(0,0), image=0, life=1000):
         self.pos = pos
-        self.size = size
-        self.color = pygame.Color(0,255,0)
+        self.image = image
+        self.rect = self.image.get_rect()
         self.alpha = 255
         self.age = 0 
         self.life = life
         self.dead = False 
-        self.surface = self.update_surface()
+        self.surf = pygame.Surface((self.rect.width,self.rect.height),pygame.SRCALPHA)
+        self.surf.blit(self.image,self.rect)
 
     def update(self, dt):
         self.age += dt
         if self.age > self.life:
             self.dead = True
         self.alpha = 255 * (1-(self.age/self.life))
-
-    def update_surface(self):
-        surf = pygame.Surface((self.size*0.8,self.size*0.8))
-        surf.fill(self.color)
-        return surf
+        self.surf.set_alpha(self.alpha)
     
     def draw(self, surface):
         if self.dead == True:     
             return
-        self.surface.set_alpha(self.alpha)
-        surface.blit(self.surface, self.pos)
+        surface.blit(self.surf,self.pos)
 
 
 class ParticleTrail():
     def __init__(self, ball_object):
         self.ball_object = ball_object
-        self.pos = self.ball_object.pos
-        self.size = ball_object.rect.width
+        self.rect = self.ball_object.rect
+        self.pos = self.ball_object.rect.x,self.ball_object.rect.y
+        self.image = ball_object.image
         self.life = 1000
         self.particle_list = []
 
     def update(self,dt):
-        particle = Particle(self.pos, size=60, life=1000)
+        particle = Particle(self.pos, image=self.image, life=500)
         self.particle_list.insert(0, particle)
         self._update_pos()
         self._update_particles(dt)
 
     def _update_pos(self):
-        x, y = self.ball_object.pos
+        x, y = (self.ball_object.rect.x,self.ball_object.rect.y)
         self.pos = (x,y)
 
     def _update_particles(self,dt):
@@ -298,10 +295,10 @@ def main():
             particletrail.update(dt)
 
             #drawing on screen
+            particletrail.draw(screen)
             ball.draw(screen)   
             striker.draw(screen)
             blockmanager._draw_blocks(screen)
-            particletrail.draw(screen)
             draw_text(f"Lives: {ball.lives}",
                       white,30,(0,SCRNHEIGHT-30),screen,False)            
 
