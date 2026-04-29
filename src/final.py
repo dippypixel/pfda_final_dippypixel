@@ -138,6 +138,13 @@ class BlockManager():
     def _draw_blocks(self,surface):
         for idx,block in enumerate(self.block_group):
             block.draw(surface)    
+    
+
+    def play_spawn_snd(self):
+        pygame.mixer.set_num_channels(1)
+        block_spawn_snd = pygame.mixer.Sound("blockhit.wav")
+        block_spawn_snd.set_volume(0.1)
+        block_spawn_snd.play()
 #------------------------------------------------------------------------        
 def main():
 
@@ -183,6 +190,16 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False 
+            if game_over == True:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        blockmanager.block_group.remove(blockmanager.block_group)
+                        game_over=False
+                        playing=False
+                        ball.lives = 3
+                        block_idx=0
+                        spawning_blocks = True
+
             #if r key is pressed and game over is true
                 #restart the game by setting playing to false and spawning blocks to true
         screen.fill(black)
@@ -196,33 +213,36 @@ def main():
                         blockmanager.block_group.add(row)
                         block_idx+=1
                         spawn_timer = 0
-                blockmanager._draw_blocks(screen)
-                ball.draw(screen)   
-                striker.draw(screen)     
-                total_blocks = block_idx            
+                        blockmanager.play_spawn_snd()
+                blockmanager._draw_blocks(screen)  
+                total_blocks = block_idx
             else:
                  spawning_blocks = False
                  spawn_timer=0
                  playing = True
+                 pygame.mixer.set_num_channels(256)
+            ball.draw(screen)   
+            striker.draw(screen)   
 
         #game running
-        if playing == True:
+        if playing == True and not game_over:
 
             #checking for collision
             if ball.pos[1]<SCRNHEIGHT//2:
                 check_ball_block_collision(ball,blockmanager.block_group)
-            check_ball_striker_collision(ball,striker_group)
+            else:
+                check_ball_striker_collision(ball,striker_group)
 
             #updating
             ball.update(dt)
             striker.update()
             blockmanager._draw_blocks(screen)
-            draw_text(f"Lives: {ball.lives}",
-                      white,30,(0,SCRNHEIGHT-30),screen,False)
 
             #drawing on screen
             ball.draw(screen)   
             striker.draw(screen)
+            draw_text(f"Lives: {ball.lives}",
+                      white,30,(0,SCRNHEIGHT-30),screen,False)            
 
             #checking for gameover
             if ball.lives < 1:
@@ -236,6 +256,8 @@ def main():
                       red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
             draw_text(f"you have smashed {blocks_smashed} out of {block_idx} blocks!",
                       white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
+            draw_text(f"press r to try again",
+                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
 
         #add win condition
 
