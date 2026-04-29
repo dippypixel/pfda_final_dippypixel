@@ -102,6 +102,64 @@ class Ball(pygame.sprite.Sprite):
         self.rect.center = self.pos
         surface.blit(self.image,self.rect)
 #---------------------------------------------------------------------------
+class Particle():
+
+    def __init__(self, pos=(0,0), size=15, life=1000):
+        self.pos = pos
+        self.size = size
+        self.color = pygame.Color(0,255,0)
+        self.alpha = 255
+        self.age = 0 
+        self.life = life
+        self.dead = False 
+        self.surface = self.update_surface()
+
+    def update(self, dt):
+        self.age += dt
+        if self.age > self.life:
+            self.dead = True
+        self.alpha = 255 * (1-(self.age/self.life))
+
+    def update_surface(self):
+        surf = pygame.Surface((self.size*0.8,self.size*0.8))
+        surf.fill(self.color)
+        return surf
+    
+    def draw(self, surface):
+        if self.dead == True:     
+            return
+        self.surface.set_alpha(self.alpha)
+        surface.blit(self.surface, self.pos)
+
+
+class ParticleTrail():
+    def __init__(self, ball_object):
+        self.ball_object = ball_object
+        self.pos = self.ball_object.pos
+        self.size = ball_object.rect.width
+        self.life = 1000
+        self.particle_list = []
+
+    def update(self,dt):
+        particle = Particle(self.pos, size=60, life=1000)
+        self.particle_list.insert(0, particle)
+        self._update_pos()
+        self._update_particles(dt)
+
+    def _update_pos(self):
+        x, y = self.ball_object.pos
+        self.pos = (x,y)
+
+    def _update_particles(self,dt):
+        for idx,particle in enumerate(self.particle_list):
+            if particle.dead:
+                del self.particle_list[idx]
+            particle.update(dt)
+
+    def draw(self,surface):
+        for particle in self.particle_list:
+            particle.draw(surface)
+#---------------------------------------------------------------------------
 class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0), spacing=30):
         pygame.sprite.Sprite.__init__(self)
@@ -180,6 +238,7 @@ def main():
 
     ball_group = pygame.sprite.GroupSingle(ball)
     striker_group = pygame.sprite.GroupSingle(striker)
+    particletrail = ParticleTrail(ball)
 
 
     blockmanager.map_block_positions()
@@ -236,11 +295,13 @@ def main():
             #updating
             ball.update(dt)
             striker.update()
-            blockmanager._draw_blocks(screen)
+            particletrail.update(dt)
 
             #drawing on screen
             ball.draw(screen)   
             striker.draw(screen)
+            blockmanager._draw_blocks(screen)
+            particletrail.draw(screen)
             draw_text(f"Lives: {ball.lives}",
                       white,30,(0,SCRNHEIGHT-30),screen,False)            
 
