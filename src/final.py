@@ -154,6 +154,8 @@ def main():
     spawn_timer = 0
     block_idx = 0
     blocks_smashed = 0
+    red=(255,0,0)
+    white=(255,255,255)
 
     #BOOLEANS
     running = True
@@ -171,13 +173,6 @@ def main():
 
     ball_group = pygame.sprite.GroupSingle(ball)
     striker_group = pygame.sprite.GroupSingle(striker)
-
-    sys_font = pygame.font.get_default_font()
-    lives_font_obj = pygame.font.Font(sys_font,20)
-    lives_text = lives_font_obj.render(f"Lives: {ball.lives}", 
-                                    False,(255,255,255))
-    lives_text_rect = lives_text.get_rect()
-    gameover_font_obj = pygame.font.Font(sys_font,40)
 
 
     blockmanager.map_block_positions()
@@ -222,29 +217,44 @@ def main():
             ball.update(dt)
             striker.update()
             blockmanager._draw_blocks(screen)
-            lives_text = lives_font_obj.render(f"Lives: {ball.lives}", False,(255,255,255))
+            draw_text(f"Lives: {ball.lives}",
+                      white,30,(0,SCRNHEIGHT-30),screen,False)
 
             #drawing on screen
             ball.draw(screen)   
             striker.draw(screen)
-            screen.blit(lives_text,(0,SCRNHEIGHT-lives_text_rect.height))
 
             #checking for gameover
             if ball.lives < 1:
-                blocks_smashed = len(blockmanager.block_poslist) - len(blockmanager.block_group)
+                blocks_smashed = (len(blockmanager.block_poslist) - 
+                                  len(blockmanager.block_group))
                 playing = False
                 game_over = True
+        #game over
         if game_over == True and not playing:
-            gameover_text = gameover_font_obj.render(f"GAME OVER \n you have smashed {blocks_smashed} out of {block_idx}!", 
-                                                False,(255,255,255))
-            gameover_rect = gameover_text.get_rect()
-            screen.blit(gameover_text,(SCRNWIDTH//2-(gameover_rect.width//2),SCRNHEIGHT//2))
+            draw_text("GAME OVER",
+                      red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
+            draw_text(f"you have smashed {blocks_smashed} out of {block_idx} blocks!",
+                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
 
         #add win condition
 
         pygame.display.flip()
         dt = clock.tick(60)
     pygame.quit()
+
+def draw_text(text,color,size,pos,surface,centered):
+    sys_font = pygame.font.get_default_font()
+    font_obj = pygame.font.Font(sys_font,size)
+    text_img = font_obj.render(text, False,(color))
+    text_rect = text_img.get_rect()
+    if centered:
+        surface.blit(text_img,(pos[0]-(text_rect.width//2),pos[1]-
+                               (text_rect.height//2)))
+    else:
+        surface.blit(text_img,(pos[0],pos[1]))
+
+
 
 def check_ball_striker_collision(ball, striker_group):
     #set striker varaible 
