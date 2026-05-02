@@ -52,12 +52,23 @@ class Ball(pygame.sprite.Sprite):
         self.colliding_withstriker = False
         self.colliding_withblock = False
         self.colliding_wall = False
+        self.trails  = []
+
+
     
     def update(self,dt):
         self.apply_gravity(dt)
         self.pos = (self.pos[0]+self.vel_x,self.pos[1]+self.vel_y)
         self.wall_collision()
-        self.reset_position()  
+        self.reset_position()
+        total_velocity = abs(self.vel_x)+abs(self.vel_y)
+        if total_velocity > 30 and self.vel_y<0:
+            if not len(self.trails):
+                self.trails.append(ParticleTrail(self))
+            self.trails[0].update(dt)
+        else:
+            if len(self.trails):
+                del self.trails[0]
 
     def apply_gravity(self,dt):
         self.vel_y += (dt*0.01)  
@@ -67,6 +78,8 @@ class Ball(pygame.sprite.Sprite):
         bounce_sfx = pygame.mixer.Sound(random.choice(sounds))
         bounce_sfx.set_volume(volume)
         bounce_sfx.play()
+
+    
 
     def wall_collision(self):
         if self.colliding_wall == False:
@@ -100,62 +113,9 @@ class Ball(pygame.sprite.Sprite):
                 self.lives -= 1
     def draw(self,surface):
         self.rect.center = self.pos
+        if self.trails:
+            self.trails[0].draw(surface)
         surface.blit(self.image,self.rect)
-#---------------------------------------------------------------------------
-class Particle():
-
-    def __init__(self, pos=(0,0), image=0, life=1000):
-        self.pos = pos
-        self.image = image
-        self.rect = self.image.get_rect()
-        self.alpha = 255
-        self.age = 0 
-        self.life = life
-        self.dead = False 
-        self.surf = pygame.Surface((self.rect.width,self.rect.height),pygame.SRCALPHA)
-        self.surf.blit(self.image,self.rect)
-
-    def update(self, dt):
-        self.age += dt
-        if self.age > self.life:
-            self.dead = True
-        self.alpha = 255 * (1-(self.age/self.life))
-        self.surf.set_alpha(self.alpha)
-    
-    def draw(self, surface):
-        if self.dead == True:     
-            return
-        surface.blit(self.surf,self.pos)
-
-
-class ParticleTrail():
-    def __init__(self, ball_object):
-        self.ball_object = ball_object
-        self.rect = self.ball_object.rect
-        self.pos = self.ball_object.rect.x,self.ball_object.rect.y
-        self.image = ball_object.image
-        self.life = 1000
-        self.particle_list = []
-
-    def update(self,dt):
-        particle = Particle(self.pos, image=self.image, life=500)
-        self.particle_list.insert(0, particle)
-        self._update_pos()
-        self._update_particles(dt)
-
-    def _update_pos(self):
-        x, y = (self.ball_object.rect.x,self.ball_object.rect.y)
-        self.pos = (x,y)
-
-    def _update_particles(self,dt):
-        for idx,particle in enumerate(self.particle_list):
-            if particle.dead:
-                del self.particle_list[idx]
-            particle.update(dt)
-
-    def draw(self,surface):
-        for particle in self.particle_list:
-            particle.draw(surface)
 #---------------------------------------------------------------------------
 class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0), spacing=30):
@@ -200,6 +160,61 @@ class BlockManager():
         block_spawn_snd = pygame.mixer.Sound("blockhit.wav")
         block_spawn_snd.set_volume(0.1)
         block_spawn_snd.play()
+#---------------------------------------------------------------------------
+class Particle():
+
+    def __init__(self, pos=(0,0), image=0, life=1000):
+        self.pos = pos
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.alpha = 255
+        self.age = 0 
+        self.life = life
+        self.dead = False 
+        self.surf = pygame.Surface((self.rect.width,self.rect.height),pygame.SRCALPHA)
+        self.surf.blit(self.image,self.rect)
+
+    def update(self, dt):
+        self.age += dt
+        if self.age > self.life:
+            self.dead = True
+        self.alpha = 255 * (1-(self.age/self.life))
+        self.surf.set_alpha(self.alpha)
+    
+    def draw(self, surface):
+        if self.dead == True:     
+            return
+        surface.blit(self.surf,self.pos)
+
+#---------------------------------------------------------------------------
+class ParticleTrail():
+    def __init__(self, ball_object):
+        self.ball_object = ball_object
+        self.rect = self.ball_object.rect
+        self.pos = self.ball_object.rect.x,self.ball_object.rect.y
+        self.image = ball_object.image
+        self.life = 100
+        self.particle_list = []
+
+    def update(self,dt):
+        particle = Particle(self.pos, image=self.image, life=self.life)
+        self.particle_list.insert(0, particle)
+        self._update_pos()
+        self._update_particles(dt)
+
+    def _update_pos(self):
+        x, y = (self.ball_object.rect.x,self.ball_object.rect.y)
+        self.pos = (x,y)
+
+    def _update_particles(self,dt):
+        for idx,particle in enumerate(self.particle_list):
+            if particle.dead:
+                del self.particle_list[idx]
+            particle.update(dt)
+
+    def draw(self,surface):
+        for particle in self.particle_list:
+            particle.draw(surface)
 #------------------------------------------------------------------------        
 def main():
 
@@ -227,7 +242,6 @@ def main():
 
     #OBJECTS
     screen= pygame.display.set_mode(resolution)
-
     blockmanager = BlockManager()
 
     striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//1.2)) 
@@ -295,7 +309,6 @@ def main():
             particletrail.update(dt)
 
             #drawing on screen
-            particletrail.draw(screen)
             ball.draw(screen)   
             striker.draw(screen)
             blockmanager._draw_blocks(screen)
