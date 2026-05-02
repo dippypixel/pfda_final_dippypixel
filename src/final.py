@@ -125,27 +125,6 @@ class Ball(pygame.sprite.Sprite):
 
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
-class Explosion(pygame.sprite.Sprite):
-    def __init__(self, pos=(0,0)):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("expl.png").convert_alpha()
-        self.ball_mask = pygame.mask.from_surface(self.image)
-        self.rect = self.image.get_rect()
-        self.rect.center = pos
-        self.age = 0
-        self.dead = False
-
-    def update(self, dt):
-        self.age += dt
-        if self.age > 500:
-            self.dead = True
-    
-    def draw(self,surface):
-        if self.dead == True:     
-            return
-        surface.blit(self.image,self.rect)
-#---------------------------------------------------------------------------
-#---------------------------------------------------------------------------
 class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0), spacing=30):
         pygame.sprite.Sprite.__init__(self)
@@ -192,6 +171,37 @@ class BlockManager():
         block_spawn_snd.play()
 #---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, pos=(0,0)):
+        pygame.sprite.Sprite.__init__(self)
+        self.age = 0
+        self.life=200
+        self.dead = False
+        self.image = pygame.image.load("expl.png").convert_alpha()
+        self.ball_mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+        self.surf = pygame.Surface((self.rect.width,self.rect.height),
+                                                    pygame.SRCALPHA)
+        self.surf.blit(self.image)
+        expl_sfx = pygame.mixer.Sound("expl.wav")
+        expl_sfx.set_volume(0.5)
+        expl_sfx.play()
+
+    def update(self, dt):
+        self.age += dt
+        if self.age > self.life:
+            self.dead = True
+        self.alpha = 255 * (1-(self.age/self.life))
+        self.surf.set_alpha(self.alpha)
+    
+    def draw(self, surface):
+        if self.dead == True:     
+            return
+        surface.blit(self.surf,self.rect)
+
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 class Particle():
 
     def __init__(self, pos=(0,0), image=0, life=1000):
@@ -202,7 +212,8 @@ class Particle():
         self.age = 0 
         self.life = life
         self.dead = False 
-        self.surf = pygame.Surface((self.rect.width,self.rect.height),pygame.SRCALPHA)
+        self.surf = pygame.Surface((self.rect.width,self.rect.height),
+                                                    pygame.SRCALPHA)
         self.surf.blit(self.image,self.rect)
 
     def update(self, dt):
@@ -275,6 +286,7 @@ def main():
     playing = False
     game_over = False
     spawning_blocks = True
+    explosion = None
 
     #OBJECTS
     screen = pygame.display.set_mode(resolution)
@@ -286,6 +298,7 @@ def main():
     ball_group = pygame.sprite.GroupSingle(ball)
     striker_group = pygame.sprite.GroupSingle(striker)
     particletrail = ParticleTrail(ball)
+    blocks = blockmanager.block_group
 
 
     blockmanager.map_block_positions()
@@ -299,7 +312,7 @@ def main():
             if game_over == True:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
-                        blockmanager.block_group.remove(blockmanager.block_group)
+                        blockmanager.block_group.remove(blocks)
                         game_over=False
                         playing=False
                         ball.lives = 3
@@ -315,8 +328,9 @@ def main():
             if block_idx < len(blockmanager.block_poslist):
                 spawn_timer += 1
                 if spawn_timer>=1:
-                        row = Block(blockmanager.block_poslist[block_idx],blockmanager.spacingy)   
-                        blockmanager.block_group.add(row)
+                        row = Block(blockmanager.block_poslist[block_idx],
+                                                    blockmanager.spacingy)   
+                        blocks.add(row)
                         block_idx+=1
                         spawn_timer = 0
                         blockmanager.play_spawn_snd()
@@ -335,26 +349,38 @@ def main():
 
             #checking for collision
             if ball.pos[1]<SCRNHEIGHT//2:
-                check_ball_block_collision(ball,blockmanager.block_group)
+                if check_ball_block_collision(ball,blocks):
+                    #sets explosion
+                    if ball.explosion_ready == True:
+                        explosion = Explosion(ball.pos)
+                        pygame.sprite.spritecollide(explosion, blocks, True, pygame.sprite.collide_mask)
+                        ball.explosion_ready = False                    
             else:
                 check_ball_striker_collision(ball,striker_group)
 
             #updating
             ball.update(dt)
             striker.update()
-            particletrail.update(dt)
+            particletrail.update(dt) 
+            if explosion:
+                explosion.update(dt)
+                if explosion.dead == True:
+                    explosion = None
 
             #drawing on screen
             ball.draw(screen)   
             striker.draw(screen)
             blockmanager._draw_blocks(screen)
-            explosion.draw(screen)
+            if explosion:
+                explosion.draw(screen)
+
+                
             draw_text(f"Lives: {ball.lives}",
                       white,30,(0,SCRNHEIGHT-30),screen,False)            
             #checking for gameover
             if ball.lives < 1:
                 blocks_smashed = (len(blockmanager.block_poslist) - 
-                                  len(blockmanager.block_group))
+                                  len(blocks))
                 playing = False
                 game_over = True
         #game over
@@ -389,9 +415,11 @@ def check_ball_striker_collision(ball, striker_group):
     #set striker varaible 
     striker = striker_group.sprites()[0]
     #if the ball is touching the striker
-    if pygame.sprite.spritecollide(ball, striker_group, False, pygame.sprite.collide_mask):  
+    if pygame.sprite.spritecollide(ball, striker_group, False, 
+                                   pygame.sprite.collide_mask):  
         #set positions of each ball
-        striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,striker.pos[1]))
+        striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,
+                                           striker.pos[1]))
         ball_pos = pygame.math.Vector2(ball.pos)
         #determine the distance 
         bs_diff = striker_pos - ball_pos
@@ -420,38 +448,29 @@ def check_ball_striker_collision(ball, striker_group):
 
 def check_ball_block_collision(ball, block_group):
     #gets a list of all of the blocks
-    collided_block_list = pygame.sprite.spritecollide(ball, block_group, True, pygame.sprite.collide_mask)
+    collided_block_list = pygame.sprite.spritecollide(ball, block_group, 
+                                        True, pygame.sprite.collide_mask)
     #sound stuff
     delete_sfx = pygame.mixer.Sound("blockhit.wav")
     delete_sfx.set_volume(0.5)
-    expl_sfx = pygame.mixer.Sound("expl.wav")
-    expl_sfx.set_volume(0.5)
     if collided_block_list:
         if not ball.colliding_withblock:
-            #plays sound
-            #set the position of the first block that it collides list
             block = collided_block_list[0]
-            #set the positions of each
-            block_pos = pygame.math.Vector2((block.rect.centerx,block.rect.centery))
+            block_pos = pygame.math.Vector2((block.rect.centerx,
+                                             block.rect.centery))
             ball_pos = pygame.math.Vector2(ball.pos)
-            #calculates the different between the positions 
             bb_diff = block_pos - ball_pos
-            #to avoid normalizing 0
             if bb_diff[0] !=0:
-                #calcuates angle the ball will go in
                 bb_angle = bb_diff.normalize()
                 if -bb_angle[1]*(-ball.vel_y/60) > 0:
                     ball.vel_x = bb_angle[0]*-(ball.vel_x)
                     ball.vel_y = -bb_angle[1]*(-ball.vel_y)
                     print(f"({ball.vel_x},{ball.vel_y})")
-                    delete_sfx.play()
-        if ball.explosion_ready == True:
-            explosion = Explosion(ball.pos)
-            if pygame.sprite.spritecollide(explosion, block_group, True, pygame.sprite.collide_mask):
-                expl_sfx.play()
+            delete_sfx.play()
         ball.colliding_withblock = True
     else:
         ball.colliding_withblock = False
+    return collided_block_list
 
 if __name__ == "__main__":
     main()
