@@ -7,6 +7,7 @@ import random
 SCRNWIDTH = 720
 SCRNHEIGHT = 1080
 #------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 class Striker(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
@@ -34,7 +35,8 @@ class Striker(pygame.sprite.Sprite):
         self.rect.center = self.pos
         surface.blit(self.image,self.rect)
 
-
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 class Ball(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
@@ -53,6 +55,7 @@ class Ball(pygame.sprite.Sprite):
         self.colliding_withblock = False
         self.colliding_wall = False
         self.trails  = []
+        self.explosion_ready = False
 
 
     
@@ -62,11 +65,14 @@ class Ball(pygame.sprite.Sprite):
         self.wall_collision()
         self.reset_position()
         total_velocity = abs(self.vel_x)+abs(self.vel_y)
-        if total_velocity > 30 and self.vel_y<0:
+        if total_velocity > 50 and self.vel_y<0:
+            self.explosion_ready = True
             if not len(self.trails):
                 self.trails.append(ParticleTrail(self))
             self.trails[0].update(dt)
         else:
+            if self.explosion_ready:
+                self.explosion_ready = False
             if len(self.trails):
                 del self.trails[0]
 
@@ -116,6 +122,29 @@ class Ball(pygame.sprite.Sprite):
         if self.trails:
             self.trails[0].draw(surface)
         surface.blit(self.image,self.rect)
+
+#---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, pos=(0,0)):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("expl.png").convert_alpha()
+        self.ball_mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+        self.age = 0
+        self.dead = False
+
+    def update(self, dt):
+        self.age += dt
+        if self.age > 500:
+            self.dead = True
+    
+    def draw(self,surface):
+        if self.dead == True:     
+            return
+        surface.blit(self.image,self.rect)
+#---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
 class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0), spacing=30):
@@ -130,6 +159,7 @@ class Block(pygame.sprite.Sprite):
     def draw(self,surface):
         self.rect.center = self.pos
         surface.blit(self.image,self.rect)
+#---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
 class BlockManager():
     def __init__(self):
@@ -161,6 +191,7 @@ class BlockManager():
         block_spawn_snd.set_volume(0.1)
         block_spawn_snd.play()
 #---------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 class Particle():
 
     def __init__(self, pos=(0,0), image=0, life=1000):
@@ -186,6 +217,7 @@ class Particle():
             return
         surface.blit(self.surf,self.pos)
 
+#---------------------------------------------------------------------------
 #---------------------------------------------------------------------------
 class ParticleTrail():
     def __init__(self, ball_object):
@@ -215,7 +247,8 @@ class ParticleTrail():
     def draw(self,surface):
         for particle in self.particle_list:
             particle.draw(surface)
-#------------------------------------------------------------------------        
+#------------------------------------------------------------------------   
+#---------------------------------------------------------------------------     
 def main():
 
     pygame.init()
@@ -223,6 +256,9 @@ def main():
     pygame.display.set_caption("Breakout:Force")
     pygame.mouse.set_visible(False)
     clock= pygame.time.Clock()
+
+    global dt
+    global screen
     
     #VALUES
     dt = 0.0
@@ -241,7 +277,7 @@ def main():
     spawning_blocks = True
 
     #OBJECTS
-    screen= pygame.display.set_mode(resolution)
+    screen = pygame.display.set_mode(resolution)
     blockmanager = BlockManager()
 
     striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//1.2)) 
@@ -312,9 +348,9 @@ def main():
             ball.draw(screen)   
             striker.draw(screen)
             blockmanager._draw_blocks(screen)
+            explosion.draw(screen)
             draw_text(f"Lives: {ball.lives}",
                       white,30,(0,SCRNHEIGHT-30),screen,False)            
-
             #checking for gameover
             if ball.lives < 1:
                 blocks_smashed = (len(blockmanager.block_poslist) - 
@@ -388,7 +424,8 @@ def check_ball_block_collision(ball, block_group):
     #sound stuff
     delete_sfx = pygame.mixer.Sound("blockhit.wav")
     delete_sfx.set_volume(0.5)
-
+    expl_sfx = pygame.mixer.Sound("expl.wav")
+    expl_sfx.set_volume(0.5)
     if collided_block_list:
         if not ball.colliding_withblock:
             #plays sound
@@ -408,10 +445,13 @@ def check_ball_block_collision(ball, block_group):
                     ball.vel_y = -bb_angle[1]*(-ball.vel_y)
                     print(f"({ball.vel_x},{ball.vel_y})")
                     delete_sfx.play()
+        if ball.explosion_ready == True:
+            explosion = Explosion(ball.pos)
+            if pygame.sprite.spritecollide(explosion, block_group, True, pygame.sprite.collide_mask):
+                expl_sfx.play()
         ball.colliding_withblock = True
     else:
-        ball.colliding_withblock = False            
-
+        ball.colliding_withblock = False
 
 if __name__ == "__main__":
     main()
