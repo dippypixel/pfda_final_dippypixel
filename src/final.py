@@ -1,6 +1,10 @@
 import pygame
 import random
 
+#TODO
+
+#add side guards for gameplay balancuing
+
 #------------------------------------------------------------------------
 # CONSTANTS
 
@@ -40,7 +44,7 @@ class Striker(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
-        self.lives = 3
+        self.lives = 6
         self.pos = pos
         self.radius = 30
         self.pos_x,self.pos_y = self.pos
@@ -280,11 +284,13 @@ def main():
     blocks_smashed = 0
     red=(255,0,0)
     white=(255,255,255)
+    green=(0,255,0)
 
     #BOOLEANS
     running = True
-    playing = False
+    game_running = False
     game_over = False
+    you_win = False
     spawning_blocks = True
     explosion = None
 
@@ -309,13 +315,14 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False 
-            if game_over == True:
+            if game_over or you_win:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
                         blockmanager.block_group.remove(blocks)
                         game_over=False
-                        playing=False
-                        ball.lives = 3
+                        game_running=False
+                        striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
+                        ball.lives = 6
                         block_idx=0
                         spawning_blocks = True
 
@@ -339,22 +346,27 @@ def main():
             else:
                  spawning_blocks = False
                  spawn_timer=0
-                 playing = True
+                 game_running = True
                  pygame.mixer.set_num_channels(256)
             ball.draw(screen)   
             striker.draw(screen)   
 
         #game running
-        if playing == True and not game_over:
+        if game_running == True:
 
             #checking for collision
-            if ball.pos[1]<SCRNHEIGHT//2:
+            if ball.pos[1]<SCRNHEIGHT//2.5:
                 if check_ball_block_collision(ball,blocks):
+                    print(len(blocks))
                     #sets explosion
                     if ball.explosion_ready == True:
                         explosion = Explosion(ball.pos)
                         pygame.sprite.spritecollide(explosion, blocks, True, pygame.sprite.collide_mask)
-                        ball.explosion_ready = False                    
+                        ball.explosion_ready = False   
+                    if len(blocks) == 0:
+                        game_running = False
+                        you_win = True
+
             else:
                 check_ball_striker_collision(ball,striker_group)
 
@@ -381,18 +393,22 @@ def main():
             if ball.lives < 1:
                 blocks_smashed = (len(blockmanager.block_poslist) - 
                                   len(blocks))
-                playing = False
+                game_running = False
                 game_over = True
-        #game over
-        if game_over == True and not playing:
+        if game_over and not game_running:
             draw_text("GAME OVER",
                       red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
-            draw_text(f"you have smashed {blocks_smashed} out of {block_idx} blocks!",
+            draw_text(f"You have smashed {blocks_smashed} out of {block_idx} blocks!",
                       white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
-            draw_text(f"press r to try again",
+            draw_text(f"Press R to try again!",
                       white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
-
-        #add win condition
+        if you_win and not game_running:
+            draw_text("YOU WIN!",
+                      green,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
+            draw_text(f"You have smashed all the blocks!",
+                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
+            draw_text(f"Press R to play again!",
+                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
 
         pygame.display.flip()
         dt = clock.tick(60)
@@ -465,7 +481,6 @@ def check_ball_block_collision(ball, block_group):
                 if -bb_angle[1]*(-ball.vel_y/60) > 0:
                     ball.vel_x = bb_angle[0]*-(ball.vel_x)
                     ball.vel_y = -bb_angle[1]*(-ball.vel_y)
-                    print(f"({ball.vel_x},{ball.vel_y})")
             delete_sfx.play()
         ball.colliding_withblock = True
     else:
