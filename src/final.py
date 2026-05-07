@@ -324,6 +324,7 @@ def main():
                         game_running=True
                         intro_running = True
                         striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
+                        ball.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
                         ball.lives = 6
                         block_idx=0
 
