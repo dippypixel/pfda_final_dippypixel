@@ -289,7 +289,7 @@ def main():
     #BOOLEANS
     running = True
     game_running = False
-    game_over = False
+    you_lost = False
     you_win = False
     spawning_blocks = True
     explosion = None
@@ -308,6 +308,7 @@ def main():
 
 
     blockmanager.map_block_positions()
+    screen.fill(pygame.Color(13,25,38))
 
     while running:
     
@@ -315,11 +316,11 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False 
-            if game_over or you_win:
+            if you_lost or you_win:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
                         blockmanager.block_group.remove(blocks)
-                        game_over=False
+                        you_lost=False
                         game_running=False
                         striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
                         ball.lives = 6
@@ -328,7 +329,6 @@ def main():
 
             #if r key is pressed and game over is true
                 #restart the game by setting playing to false and spawning blocks to true
-        screen.fill(black)
 
         #SPAWNING BLOCKS
         if spawning_blocks:
@@ -378,6 +378,9 @@ def main():
                 explosion.update(dt)
                 if explosion.dead == True:
                     explosion = None
+            
+            screen.fill(pygame.Color(80//max(1,ball.lives),25,38))
+            
 
             #drawing on screen
             ball.draw(screen)   
@@ -394,21 +397,25 @@ def main():
                 blocks_smashed = (len(blockmanager.block_poslist) - 
                                   len(blocks))
                 game_running = False
-                game_over = True
-        if game_over and not game_running:
-            draw_text("GAME OVER",
-                      red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
-            draw_text(f"You have smashed {blocks_smashed} out of {block_idx} blocks!",
-                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
-            draw_text(f"Press R to try again!",
-                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
-        if you_win and not game_running:
-            draw_text("YOU WIN!",
-                      green,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
-            draw_text(f"You have smashed all the blocks!",
-                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
-            draw_text(f"Press R to play again!",
-                      white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
+                you_lost = True
+        if not game_running:
+
+            if you_lost:
+                screen.fill(black)
+                draw_text("GAME OVER",
+                        red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
+                draw_text(f"You have smashed {blocks_smashed} out of {block_idx} blocks!",
+                        white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
+                draw_text(f"Press R to try again!",
+                        white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
+            if you_win:
+                screen.fill(black)
+                draw_text("YOU WIN!",
+                        green,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
+                draw_text(f"You have smashed all the blocks!",
+                        white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
+                draw_text(f"Press R to play again!",
+                        white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
 
         pygame.display.flip()
         dt = clock.tick(60)
