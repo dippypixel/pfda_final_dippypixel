@@ -287,11 +287,12 @@ def main():
     green=(0,255,0)
 
     #BOOLEANS
-    running = True
-    game_running = False
+    program_running = True
+    game_running = True
+    game_playing = False
     you_lost = False
     you_win = False
-    spawning_blocks = True
+    intro_running = True
     explosion = None
 
     #OBJECTS
@@ -308,96 +309,94 @@ def main():
 
 
     blockmanager.map_block_positions()
-    screen.fill(pygame.Color(13,25,38))
 
-    while running:
+    while program_running:
     
         #QUIT DETECTION
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False 
+                program_running = False 
             if you_lost or you_win:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
                         blockmanager.block_group.remove(blocks)
                         you_lost=False
-                        game_running=False
+                        game_running=True
+                        intro_running = True
                         striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
                         ball.lives = 6
                         block_idx=0
-                        spawning_blocks = True
 
             #if r key is pressed and game over is true
                 #restart the game by setting playing to false and spawning blocks to true
-
-        #SPAWNING BLOCKS
-        if spawning_blocks:
-            if block_idx < len(blockmanager.block_poslist):
-                spawn_timer += 1
-                if spawn_timer>=1:
-                        row = Block(blockmanager.block_poslist[block_idx],
-                                                    blockmanager.spacingy)   
-                        blocks.add(row)
-                        block_idx+=1
-                        spawn_timer = 0
-                        blockmanager.play_spawn_snd()
-                blockmanager._draw_blocks(screen)  
-                total_blocks = block_idx
-            else:
-                 spawning_blocks = False
-                 spawn_timer=0
-                 game_running = True
-                 pygame.mixer.set_num_channels(256)
-            ball.draw(screen)   
-            striker.draw(screen)   
-
-        #game running
-        if game_running == True:
-
-            #checking for collision
-            if ball.pos[1]<SCRNHEIGHT//2.5:
-                if check_ball_block_collision(ball,blocks):
-                    print(len(blocks))
-                    #sets explosion
-                    if ball.explosion_ready == True:
-                        explosion = Explosion(ball.pos)
-                        pygame.sprite.spritecollide(explosion, blocks, True, pygame.sprite.collide_mask)
-                        ball.explosion_ready = False   
-                    if len(blocks) == 0:
-                        game_running = False
-                        you_win = True
-
-            else:
-                check_ball_striker_collision(ball,striker_group)
-
-            #updating
-            ball.update(dt)
-            striker.update()
-            particletrail.update(dt) 
-            if explosion:
-                explosion.update(dt)
-                if explosion.dead == True:
-                    explosion = None
-            
+        if game_running:
             screen.fill(pygame.Color(80//max(1,ball.lives),25,38))
-            
+            #SPAWNING BLOCKS
+            if intro_running:
+                game_playing=False
+                if block_idx < len(blockmanager.block_poslist):
+                    spawn_timer += 1
+                    if spawn_timer>=1:
+                            row = Block(blockmanager.block_poslist[block_idx],
+                                                        blockmanager.spacingy)   
+                            blocks.add(row)
+                            block_idx+=1
+                            spawn_timer = 0
+                            blockmanager.play_spawn_snd()
+                    blockmanager._draw_blocks(screen)  
+                    total_blocks = block_idx
+                else:
+                    intro_running = False
+                    spawn_timer=0
+                    game_playing = True
+                    pygame.mixer.set_num_channels(256)
+                ball.draw(screen)   
+                striker.draw(screen)   
 
-            #drawing on screen
-            ball.draw(screen)   
-            striker.draw(screen)
-            blockmanager._draw_blocks(screen)
-            if explosion:
-                explosion.draw(screen)
+            #game running
+            if game_playing == True:
 
-                
-            draw_text(f"Lives: {ball.lives}",
-                      white,30,(0,SCRNHEIGHT-30),screen,False)            
-            #checking for gameover
-            if ball.lives < 1:
-                blocks_smashed = (len(blockmanager.block_poslist) - 
-                                  len(blocks))
-                game_running = False
-                you_lost = True
+                #checking for collision
+                if ball.pos[1]<SCRNHEIGHT//2.5:
+                    if check_ball_block_collision(ball,blocks):
+                        print(len(blocks))
+                        #sets explosion
+                        if ball.explosion_ready == True:
+                            explosion = Explosion(ball.pos)
+                            pygame.sprite.spritecollide(explosion, blocks, True, pygame.sprite.collide_mask)
+                            ball.explosion_ready = False   
+                        if len(blocks) == 0:
+                            game_running = False
+                            you_win = True
+
+                else:
+                    check_ball_striker_collision(ball,striker_group)
+
+                #updating
+                ball.update(dt)
+                striker.update()
+                particletrail.update(dt) 
+                if explosion:
+                    explosion.update(dt)
+                    if explosion.dead == True:
+                        explosion = None
+
+                #drawing on screen
+                ball.draw(screen)   
+                striker.draw(screen)
+                blockmanager._draw_blocks(screen)
+                if explosion:
+                    explosion.draw(screen)
+
+                    
+                draw_text(f"Lives: {ball.lives}",
+                        white,30,(0,SCRNHEIGHT-30),screen,False)            
+                #checking for gameover
+                if ball.lives < 1:
+                    blocks_smashed = (len(blockmanager.block_poslist) - 
+                                    len(blocks))
+                    game_running = False
+                    you_lost = True
         if not game_running:
 
             if you_lost:
