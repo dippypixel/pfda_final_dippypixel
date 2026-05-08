@@ -1,16 +1,16 @@
 import pygame
 import random
 
-#TODO
-
-#add side guards for gameplay balancuing
-
 #------------------------------------------------------------------------
 # CONSTANTS
 
 SCRNWIDTH = 720
 SCRNHEIGHT = 1080
-#------------------------------------------------------------------------
+
+#GLOBALS
+
+global dt
+global screen
 #---------------------------------------------------------------------------
 class Striker(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
@@ -20,7 +20,7 @@ class Striker(pygame.sprite.Sprite):
         self.vel_x = 0
         self.vel_y = 0
 
-        self.image = pygame.image.load("striker.png").convert_alpha()
+        self.image = pygame.image.load("sprites/striker.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
 
@@ -51,7 +51,7 @@ class Ball(pygame.sprite.Sprite):
         self.vel_x = 0
         self.vel_y = 0
 
-        self.image = pygame.image.load("ball.png").convert_alpha()
+        self.image = pygame.image.load("sprites/ball.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.ball_mask = pygame.mask.from_surface(self.image)
 
@@ -84,7 +84,8 @@ class Ball(pygame.sprite.Sprite):
         self.vel_y += (dt*0.01)  
 
     def play_bounce_sfx(self,volume):
-        sounds = ["bounce.wav","bounce1.wav","bounce2.wav"]
+        sounds = (["sounds/bounce.wav","sounds/bounce1.wav",
+                  "sounds/bounce2.wav"])
         bounce_sfx = pygame.mixer.Sound(random.choice(sounds))
         bounce_sfx.set_volume(volume)
         bounce_sfx.play()
@@ -93,19 +94,16 @@ class Ball(pygame.sprite.Sprite):
 
     def wall_collision(self):
         if self.colliding_wall == False:
-            #colliding from the top
             if self.pos[1] <= 0 + self.radius and self.vel_y < 0:
                 self.play_bounce_sfx(0.2)
                 self.vel_y *= -.7
                 self.colliding_wall = True
                 self.fast = False
-            #colliding with the sides
             if (self.pos[0] <= 0 + self.rect.width//2 or 
                 self.pos[0]  >= SCRNWIDTH - self.rect.width//2):
                 self.play_bounce_sfx(0.2)
                 self.vel_x *= -.7
                 self.colliding_wall = True
-            #reseting position if it goes past the walls
             if self.pos[0] <= 0 + self.rect.width//2:
                 self.pos = (self.rect.width//2,self.pos[1])
             if self.pos[0]  >= SCRNWIDTH - self.rect.width//2:
@@ -134,7 +132,7 @@ class Block(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.spacing = spacing
-        self.image = pygame.image.load("block.png").convert_alpha()
+        self.image = pygame.image.load("sprites/block.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.ball_mask = pygame.mask.from_surface(self.image)
         
@@ -170,7 +168,7 @@ class BlockManager():
 
     def play_spawn_snd(self):
         pygame.mixer.set_num_channels(1)
-        block_spawn_snd = pygame.mixer.Sound("blockhit.wav")
+        block_spawn_snd = pygame.mixer.Sound("sounds/blockhit.wav")
         block_spawn_snd.set_volume(0.1)
         block_spawn_snd.play()
 #---------------------------------------------------------------------------
@@ -181,14 +179,14 @@ class Explosion(pygame.sprite.Sprite):
         self.age = 0
         self.life=200
         self.dead = False
-        self.image = pygame.image.load("expl.png").convert_alpha()
+        self.image = pygame.image.load("sprites/expl.png").convert_alpha()
         self.ball_mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.center = pos
         self.surf = pygame.Surface((self.rect.width,self.rect.height),
                                                     pygame.SRCALPHA)
         self.surf.blit(self.image)
-        expl_sfx = pygame.mixer.Sound("expl.wav")
+        expl_sfx = pygame.mixer.Sound("sounds/expl.wav")
         expl_sfx.set_volume(0.5)
         expl_sfx.play()
 
@@ -271,9 +269,6 @@ def main():
     pygame.display.set_caption("Breakout:Force")
     pygame.mouse.set_visible(False)
     clock= pygame.time.Clock()
-
-    global dt
-    global screen
     
     #VALUES
     dt = 0.0
@@ -293,16 +288,13 @@ def main():
     you_lost = False
     you_win = False
     intro_running = True
-    explosion = None
 
     #OBJECTS
     screen = pygame.display.set_mode(resolution)
     blockmanager = BlockManager()
-
     striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//1.2)) 
     ball = Ball((SCRNWIDTH//2,SCRNHEIGHT//2))
-
-    ball_group = pygame.sprite.GroupSingle(ball)
+    explosion = None
     striker_group = pygame.sprite.GroupSingle(striker)
     particletrail = ParticleTrail(ball)
     blocks = blockmanager.block_group
@@ -389,9 +381,9 @@ def main():
                 if explosion:
                     explosion.draw(screen)
 
-                    
                 draw_text(f"Lives: {ball.lives}",
-                        white,30,(0,SCRNHEIGHT-30),screen,False)            
+                        white,30,(0,SCRNHEIGHT-30),screen,False)   
+                         
                 #checking for gameover
                 if ball.lives < 1:
                     blocks_smashed = (len(blockmanager.block_poslist) - 
@@ -424,7 +416,7 @@ def main():
 def draw_text(text,color,size,pos,surface,centered):
     sys_font = pygame.font.get_default_font()
     font_obj = pygame.font.Font(sys_font,size)
-    text_img = font_obj.render(text, False,(color))
+    text_img = font_obj.render(text, True,(color))
     text_rect = text_img.get_rect()
     if centered:
         surface.blit(text_img,(pos[0]-(text_rect.width//2),pos[1]-
@@ -440,31 +432,22 @@ def check_ball_striker_collision(ball, striker_group):
     #if the ball is touching the striker
     if pygame.sprite.spritecollide(ball, striker_group, False, 
                                    pygame.sprite.collide_mask):  
-        #set positions of each ball
         striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,
                                            striker.pos[1]))
         ball_pos = pygame.math.Vector2(ball.pos)
-        #determine the distance 
         bs_diff = striker_pos - ball_pos
         bs_dist = bs_diff.length()
         bs_mindist = ball.rect.height//2 + striker.rect.height//2
-        #prevenets normalizing a zero variable
         if bs_dist !=0:
             bs_overlap = (bs_mindist - bs_dist)
             bs_normal = bs_diff.normalize()
-            #pops out ball before it renders
             ball.pos -= bs_normal*bs_overlap
-            #if it wasnt originally colliding
             if not ball.colliding_withstriker:
                     ball.play_bounce_sfx(1)
-                    #set ball velocity to the strikers velocity
                     ball.vel_x = -bs_normal[0]+striker.vel_x
                     ball.vel_y = striker.vel_y
-                    #cap vertical velocity at -60
-                    ball.vel_y = min(max(ball.vel_y,-60),-2)    
-                    #set it as true to prevent it repeating each frame             
+                    ball.vel_y = min(max(ball.vel_y,-60),-2)              
                     ball.colliding_withstriker = True 
-    #if ball is not touching the striker, set it to 0.
     else:
         ball.colliding_withstriker = False     
 
@@ -474,7 +457,7 @@ def check_ball_block_collision(ball, block_group):
     collided_block_list = pygame.sprite.spritecollide(ball, block_group, 
                                         True, pygame.sprite.collide_mask)
     #sound stuff
-    delete_sfx = pygame.mixer.Sound("blockhit.wav")
+    delete_sfx = pygame.mixer.Sound("sounds/blockhit.wav")
     delete_sfx.set_volume(0.5)
     if collided_block_list:
         if not ball.colliding_withblock:
@@ -493,6 +476,7 @@ def check_ball_block_collision(ball, block_group):
     else:
         ball.colliding_withblock = False
     return collided_block_list
+
 
 if __name__ == "__main__":
     main()
