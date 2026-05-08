@@ -50,8 +50,9 @@ class Ball(pygame.sprite.Sprite):
         self.pos_x,self.pos_y = self.pos
         self.vel_x = 0
         self.vel_y = 0
-
-        self.image = pygame.image.load("sprites/ball.png").convert_alpha()
+        self.sprite = pygame.image.load("sprites/ball.png").convert_alpha()
+        self.expl_sprite = pygame.image.load("sprites/ball_expl.png").convert_alpha()
+        self.image = self.sprite
         self.rect = self.image.get_rect()
         self.ball_mask = pygame.mask.from_surface(self.image)
 
@@ -71,12 +72,16 @@ class Ball(pygame.sprite.Sprite):
         total_velocity = abs(self.vel_x)+abs(self.vel_y)
         if total_velocity > 50 and self.vel_y<0:
             self.explosion_ready = True
+            if self.image == self.sprite:
+                self.image = self.expl_sprite
             if not len(self.trails):
                 self.trails.append(ParticleTrail(self))
             self.trails[0].update(dt)
         else:
             if self.explosion_ready:
                 self.explosion_ready = False
+            if self.image == self.expl_sprite:
+                self.image = self.sprite
             if len(self.trails):
                 del self.trails[0]
 
