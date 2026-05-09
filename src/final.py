@@ -347,6 +347,7 @@ def main():
                     intro_running = True
                     striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
                     ball.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
+                    ball.vel_x,ball.vel_y =(0,0)
                     ball.lives = 6
                     block_idx=0
 
@@ -421,7 +422,6 @@ def main():
                     game_running = False
                     you_lost = True
         if not game_running:
-
             if on_title:
                 screen.fill(black)
                 draw_text("Breakout: FORCE",
