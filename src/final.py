@@ -44,51 +44,63 @@ class Striker(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
         pygame.sprite.Sprite.__init__(self)
+        
+        #BOOLEANS
+        self.colliding_withstriker = False
+        self.colliding_withblock = False
+        self.colliding_wall = False
+        self.explosion_ready = False
+        self.living = True
+
+        #VARIABLES
         self.lives = 6
         self.pos = pos
         self.radius = 30
         self.pos_x,self.pos_y = self.pos
         self.vel_x = 0
         self.vel_y = 0
+
+        #IMAGES
         self.sprite = pygame.image.load("sprites/ball.png").convert_alpha()
         self.expl_sprite = pygame.image.load("sprites/ball_expl.png").convert_alpha()
+
+        #SPRITES
         self.image = self.sprite
         self.rect = self.image.get_rect()
         self.ball_mask = pygame.mask.from_surface(self.image)
 
-        self.colliding_withstriker = False
-        self.colliding_withblock = False
-        self.colliding_wall = False
+        #LISTS
         self.trails  = []
-        self.explosion_ready = False
 
 
     
     def update(self,dt):
-        self.apply_gravity(dt)
-        self.pos = (self.pos[0]+self.vel_x,self.pos[1]+self.vel_y)
-        self.check_wallclsn()
 
         if self.pos[1] >= SCRNHEIGHT+self.rect.height:
             self.ball_die()
             pygame.time.delay(500)
+            self.living = True
             self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
-
-        total_velocity = abs(self.vel_x)+abs(self.vel_y)
-        if total_velocity > 50 and self.vel_y<0:
-            self.explosion_ready = True
-            if self.image == self.sprite:
-                self.image = self.expl_sprite
-            if not len(self.trails):
-                self.trails.append(ParticleTrail(self))
-            self.trails[0].update(dt)
         else:
-            if self.explosion_ready:
-                self.explosion_ready = False
-            if self.image == self.expl_sprite:
-                self.image = self.sprite
-            if len(self.trails):
-                del self.trails[0]
+            self.apply_gravity(dt)
+            self.pos = (self.pos[0]+self.vel_x,self.pos[1]+self.vel_y)
+            self.check_wallclsn()           
+
+            total_velocity = abs(self.vel_x)+abs(self.vel_y)
+            if total_velocity > 60 and self.vel_y<0:
+                self.explosion_ready = True
+                if self.image == self.sprite:
+                    self.image = self.expl_sprite
+                if not len(self.trails):
+                    self.trails.append(ParticleTrail(self))
+                self.trails[0].update(dt)
+            else:
+                if self.explosion_ready:
+                    self.explosion_ready = False
+                if self.image == self.expl_sprite:
+                    self.image = self.sprite
+                if len(self.trails):
+                    del self.trails[0]
 
     def apply_gravity(self,dt):
         self.vel_y += (dt*0.01)  
@@ -125,11 +137,16 @@ class Ball(pygame.sprite.Sprite):
     def ball_die(self):
             pygame.mixer.stop()
             pygame.mixer.Sound("sounds/lose.wav").play()
-            self.colliding_withstriker = False 
+
             self.vel_x = 0
             self.vel_y = 5
             self.lives -= 1
+
+            self.colliding_withstriker = False 
+            self.living = False
     def draw(self,surface):
+        if not self.living:
+            return
         self.rect.center = self.pos
         if self.trails:
             self.trails[0].draw(surface)
@@ -290,11 +307,13 @@ def main():
     red=(255,0,0)
     white=(255,255,255)
     green=(0,255,0)
+    block_spawndelay = 1
 
     #BOOLEANS
     program_running = True
-    game_running = True
+    game_running = False
     game_playing = False
+    on_title = True
     you_lost = False
     you_win = False
     intro_running = True
@@ -313,22 +332,24 @@ def main():
     blockmanager.map_block_positions()
 
     while program_running:
+
     
         #QUIT DETECTION
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 program_running = False 
-            if you_lost or you_win:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        blockmanager.block_group.remove(blocks)
-                        you_lost=False
-                        game_running=True
-                        intro_running = True
-                        striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
-                        ball.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
-                        ball.lives = 6
-                        block_idx=0
+            if event.type == pygame.KEYDOWN:
+                print("a key was held down!")
+                if not game_running:
+                    blockmanager.block_group.remove(blocks)
+                    you_lost=False
+                    game_running=True
+                    intro_running = True
+                    striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
+                    ball.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
+                    ball.lives = 6
+                    block_idx=0
+
 
             #if r key is pressed and game over is true
                 #restart the game by setting playing to false and spawning blocks to true
@@ -339,7 +360,7 @@ def main():
                 game_playing=False
                 if block_idx < len(blockmanager.block_poslist):
                     spawn_timer += 1
-                    if spawn_timer>=1:
+                    if spawn_timer>=block_spawndelay:
                             row = Block(blockmanager.block_poslist[block_idx],
                                                         blockmanager.spacingy)   
                             blocks.add(row)
@@ -347,7 +368,6 @@ def main():
                             spawn_timer = 0
                             blockmanager.play_spawn_snd()
                     blockmanager._draw_blocks(screen)  
-                    total_blocks = block_idx
                 else:
                     intro_running = False
                     spawn_timer=0
@@ -402,13 +422,20 @@ def main():
                     you_lost = True
         if not game_running:
 
+            if on_title:
+                screen.fill(black)
+                draw_text("Breakout: FORCE",
+                        red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
+                draw_text(f"Press any key to play",
+                        white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
+
             if you_lost:
                 screen.fill(black)
                 draw_text("GAME OVER",
                         red,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
                 draw_text(f"You have smashed {blocks_smashed} out of {block_idx} blocks!",
                         white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
-                draw_text(f"Press R to try again!",
+                draw_text(f"Press any key to try again!",
                         white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
             if you_win:
                 screen.fill(black)
@@ -416,7 +443,7 @@ def main():
                         green,60,(SCRNWIDTH//2,SCRNHEIGHT//2),screen,True)
                 draw_text(f"You have smashed all the blocks!",
                         white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+60),screen,True)
-                draw_text(f"Press R to play again!",
+                draw_text(f"Press any key to play again!",
                         white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
 
         pygame.display.flip()
@@ -424,7 +451,7 @@ def main():
     pygame.quit()
 
 def draw_text(text,color,size,pos,surface,centered):
-    sys_font = pygame.font.get_default_font()
+    sys_font = pygame.font.match_font('orbitron')
     font_obj = pygame.font.Font(sys_font,size)
     text_img = font_obj.render(text, True,(color))
     text_rect = text_img.get_rect()
