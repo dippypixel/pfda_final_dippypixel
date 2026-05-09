@@ -29,7 +29,7 @@ class Striker(pygame.sprite.Sprite):
     def update(self):
         x,y = pygame.mouse.get_pos()
         x =  min(x+self.radius,SCRNWIDTH-self.radius)
-        y = max(min(y,SCRNHEIGHT-self.radius),SCRNHEIGHT//2)
+        y = max(min(y,SCRNHEIGHT-self.radius),SCRNHEIGHT//1.5)
 
         self.vel_x = x - self.pos[0]
         self.vel_y = y - self.pos[1]
@@ -67,8 +67,13 @@ class Ball(pygame.sprite.Sprite):
     def update(self,dt):
         self.apply_gravity(dt)
         self.pos = (self.pos[0]+self.vel_x,self.pos[1]+self.vel_y)
-        self.wall_collision()
-        self.reset_position()
+        self.check_wallclsn()
+
+        if self.pos[1] >= SCRNHEIGHT+self.rect.height:
+            self.ball_die()
+            pygame.time.delay(500)
+            self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
+
         total_velocity = abs(self.vel_x)+abs(self.vel_y)
         if total_velocity > 50 and self.vel_y<0:
             self.explosion_ready = True
@@ -97,7 +102,7 @@ class Ball(pygame.sprite.Sprite):
 
     
 
-    def wall_collision(self):
+    def check_wallclsn(self):
         if self.colliding_wall == False:
             if self.pos[1] <= 0 + self.radius and self.vel_y < 0:
                 self.play_bounce_sfx(0.2)
@@ -117,13 +122,13 @@ class Ball(pygame.sprite.Sprite):
         else:
             self.colliding_wall = False
 
-    def reset_position(self):
-            if self.pos[1] >= SCRNHEIGHT+self.radius:
-                self.colliding_withstriker = False 
-                self.pos = (SCRNWIDTH//2,SCRNHEIGHT//2)
-                self.vel_x = 0
-                self.vel_y = 5
-                self.lives -= 1
+    def ball_die(self):
+            pygame.mixer.stop()
+            pygame.mixer.Sound("sounds/lose.wav").play()
+            self.colliding_withstriker = False 
+            self.vel_x = 0
+            self.vel_y = 5
+            self.lives -= 1
     def draw(self,surface):
         self.rect.center = self.pos
         if self.trails:
