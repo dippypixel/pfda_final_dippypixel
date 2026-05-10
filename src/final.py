@@ -100,7 +100,6 @@ class Ball(pygame.sprite.Sprite):
                 if len(self.trails):
                     del self.trails[0]
                 self.image = self.sprite
-        print(self.explosion_ready)
 
     def apply_gravity(self,dt):
         self.vel_y += (dt*0.01)  
