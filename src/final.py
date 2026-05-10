@@ -14,17 +14,20 @@ global screen
 #---------------------------------------------------------------------------
 class Striker(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
-        pygame.sprite.Sprite.__init__(self)
+        pygame.sprite.Sprite.__init__(self)  
+        #BOOLEANS
+        self.wallhit = False
+
+        #VARIABLES
         self.pos = pos
         self.radius = 30
         self.vel_x = 0
         self.vel_y = 0
 
+        #SPRITES
         self.image = pygame.image.load("sprites/striker.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
-
-        self.wallhit = False
 
     def update(self):
         x,y = pygame.mouse.get_pos()
@@ -95,7 +98,7 @@ class Ball(pygame.sprite.Sprite):
                     self.trails.append(ParticleTrail(self))
                 self.trails[0].update(dt)
             else:
-                if self.explosion_ready:
+                if self.explosion_ready and total_velocity < 20:
                     self.explosion_ready = False
                 if self.image == self.expl_sprite:
                     self.image = self.sprite
@@ -157,8 +160,10 @@ class Ball(pygame.sprite.Sprite):
 class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0), spacing=30):
         pygame.sprite.Sprite.__init__(self)
+        #VARIABLES
         self.pos = pos
         self.spacing = spacing
+        #IMAGES
         self.image = pygame.image.load("sprites/block.png").convert_alpha()
         self.rect = self.image.get_rect()
         self.ball_mask = pygame.mask.from_surface(self.image)
@@ -328,7 +333,7 @@ def main():
     particletrail = ParticleTrail(ball)
     blocks = blockmanager.block_group
 
-
+    #INIT
     blockmanager.map_block_positions()
 
     while program_running:
@@ -339,7 +344,6 @@ def main():
             if event.type == pygame.QUIT:
                 program_running = False 
             if event.type == pygame.KEYDOWN:
-                print("a key was held down!")
                 if not game_running:
                     blockmanager.block_group.remove(blocks)
                     you_lost=False
@@ -350,13 +354,9 @@ def main():
                     ball.vel_x,ball.vel_y =(0,0)
                     ball.lives = 6
                     block_idx=0
-
-
-            #if r key is pressed and game over is true
-                #restart the game by setting playing to false and spawning blocks to true
         if game_running:
             screen.fill(pygame.Color(80//max(1,ball.lives),25,38))
-            #SPAWNING BLOCKS
+            #INTRO
             if intro_running:
                 game_playing=False
                 if block_idx < len(blockmanager.block_poslist):
@@ -377,13 +377,11 @@ def main():
                 ball.draw(screen)   
                 striker.draw(screen)   
 
-            #game running
+            #GAMEPLAY
             if game_playing == True:
-
-                #checking for collision
+                #COLLISION
                 if ball.pos[1]<SCRNHEIGHT//2.5:
                     if check_ball_block_collision(ball,blocks):
-                        print(len(blocks))
                         #sets explosion
                         if ball.explosion_ready == True:
                             explosion = Explosion(ball.pos)
@@ -396,7 +394,7 @@ def main():
                 else:
                     check_ball_striker_collision(ball,striker_group)
 
-                #updating
+                #UPDATE
                 ball.update(dt)
                 striker.update()
                 particletrail.update(dt) 
@@ -405,7 +403,7 @@ def main():
                     if explosion.dead == True:
                         explosion = None
 
-                #drawing on screen
+                #DRAWING
                 ball.draw(screen)   
                 striker.draw(screen)
                 blockmanager._draw_blocks(screen)
@@ -415,7 +413,7 @@ def main():
                 draw_text(f"Lives: {ball.lives}",
                         white,30,(0,SCRNHEIGHT-30),screen,False)   
                          
-                #checking for gameover
+                #GAMEOVER
                 if ball.lives < 1:
                     blocks_smashed = (len(blockmanager.block_poslist) - 
                                     len(blocks))
@@ -447,7 +445,7 @@ def main():
                         white,30,(SCRNWIDTH//2,SCRNHEIGHT//2+120),screen,True)
 
         pygame.display.flip()
-        dt = clock.tick(60)
+        dt = clock.tick(60) 
     pygame.quit()
 
 def draw_text(text,color,size,pos,surface,centered):
@@ -464,9 +462,7 @@ def draw_text(text,color,size,pos,surface,centered):
 
 
 def check_ball_striker_collision(ball, striker_group):
-    #set striker varaible 
     striker = striker_group.sprites()[0]
-    #if the ball is touching the striker
     if pygame.sprite.spritecollide(ball, striker_group, False, 
                                    pygame.sprite.collide_mask):  
         striker_pos = pygame.math.Vector2((striker.pos[0]+striker.vel_x,
@@ -490,10 +486,8 @@ def check_ball_striker_collision(ball, striker_group):
 
 
 def check_ball_block_collision(ball, block_group):
-    #gets a list of all of the blocks
     collided_block_list = pygame.sprite.spritecollide(ball, block_group, 
                                         True, pygame.sprite.collide_mask)
-    #sound stuff
     delete_sfx = pygame.mixer.Sound("sounds/blockhit.wav")
     delete_sfx.set_volume(0.5)
     if collided_block_list:
