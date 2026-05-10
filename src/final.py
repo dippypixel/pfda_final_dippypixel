@@ -6,11 +6,6 @@ import random
 
 SCRNWIDTH = 720
 SCRNHEIGHT = 1080
-
-#GLOBALS
-
-global dt
-global screen
 #---------------------------------------------------------------------------
 class Striker(pygame.sprite.Sprite):
     def __init__(self, pos=(0,0)):
@@ -180,7 +175,7 @@ class BlockManager():
         self.block_group = pygame.sprite.Group()
         self.spacingx = 60
         self.spacingy = 30
-        self.pos = (-30,self.spacingy)
+        self.pos = (-30,self.spacingy//2)
 
     def map_block_positions(self):
         x,y=self.pos[0],self.pos[1]
@@ -323,8 +318,11 @@ def main():
     you_win = False
     intro_running = True
 
-    #OBJECTS
+    #SCREEN
     screen = pygame.display.set_mode(resolution)
+    bg_image = pygame.image.load("sprites/bg.png").convert_alpha()
+
+    #OBJECTS
     blockmanager = BlockManager()
     striker = Striker((SCRNWIDTH//2,SCRNHEIGHT//1.2)) 
     ball = Ball((SCRNWIDTH//2,SCRNHEIGHT//2))
@@ -332,9 +330,6 @@ def main():
     striker_group = pygame.sprite.GroupSingle(striker)
     particletrail = ParticleTrail(ball)
     blocks = blockmanager.block_group
-
-    #INIT
-    blockmanager.map_block_positions()
 
     while program_running:
 
@@ -355,10 +350,18 @@ def main():
                     ball.lives = 6
                     block_idx=0
         if game_running:
+
+            #DRAWING BG
             screen.fill(pygame.Color(80//max(1,ball.lives),25,38))
+            screen.blit(bg_image,(0,0))
+
             #INTRO
             if intro_running:
                 game_playing=False
+
+                if not blockmanager.block_poslist:
+                    blockmanager.map_block_positions()
+                    
                 if block_idx < len(blockmanager.block_poslist):
                     spawn_timer += 1
                     if spawn_timer>=block_spawndelay:
@@ -382,7 +385,6 @@ def main():
                 #COLLISION
                 if ball.pos[1]<SCRNHEIGHT//2.5:
                     if check_ball_block_collision(ball,blocks):
-                        #sets explosion
                         if ball.explosion_ready == True:
                             explosion = Explosion(ball.pos)
                             pygame.sprite.spritecollide(explosion, blocks, True, pygame.sprite.collide_mask)
@@ -390,7 +392,6 @@ def main():
                         if len(blocks) == 0:
                             game_running = False
                             you_win = True
-
                 else:
                     check_ball_striker_collision(ball,striker_group)
 
@@ -409,9 +410,8 @@ def main():
                 blockmanager._draw_blocks(screen)
                 if explosion:
                     explosion.draw(screen)
-
                 draw_text(f"Lives: {ball.lives}",
-                        white,30,(0,SCRNHEIGHT-30),screen,False)   
+                        white,30,(15,SCRNHEIGHT-45),screen,False)   
                          
                 #GAMEOVER
                 if ball.lives < 1:
