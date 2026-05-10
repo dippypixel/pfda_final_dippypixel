@@ -342,6 +342,7 @@ def main():
                 if not game_running:
                     blockmanager.block_group.remove(blocks)
                     you_lost=False
+                    you_win=False
                     game_running=True
                     intro_running = True
                     striker.pos = (SCRNWIDTH//2,SCRNHEIGHT//1.2)
