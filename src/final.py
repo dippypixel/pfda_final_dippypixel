@@ -87,18 +87,20 @@ class Ball(pygame.sprite.Sprite):
             total_velocity = abs(self.vel_x)+abs(self.vel_y)
             if total_velocity > 60 and self.vel_y<0:
                 self.explosion_ready = True
-                if self.image == self.sprite:
-                    self.image = self.expl_sprite
+            else:
+                if self.explosion_ready and total_velocity < 40:
+                    self.explosion_ready = False
+                    
+            if self.explosion_ready:
+                self.image = self.expl_sprite
                 if not len(self.trails):
                     self.trails.append(ParticleTrail(self))
                 self.trails[0].update(dt)
             else:
-                if self.explosion_ready and total_velocity < 20:
-                    self.explosion_ready = False
-                if self.image == self.expl_sprite:
-                    self.image = self.sprite
                 if len(self.trails):
                     del self.trails[0]
+                self.image = self.sprite
+        print(self.explosion_ready)
 
     def apply_gravity(self,dt):
         self.vel_y += (dt*0.01)  
