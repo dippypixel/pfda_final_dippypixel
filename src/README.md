@@ -21,6 +21,13 @@ Breakout:Force is a breakout clone that differentiates itself by combining aspec
     Game feel is not entirely up to my original vision, I intended to add pause screenshake whenever the ball is hit very hard, but that felt out of my scope. 
 ### Considerations:
     I did consider adding barriers to the corners on the bottom like real air hockey, but that was turned down due to decreasing the difficulty and lessening the impact of when you win.
+### Challenges:
+    The challenges I faced when creating this project are:
+    -learning how to code basic physics
+    -how to code collision
+    -how to render images as sprites
+    -how to play sound 
+    -how to create various screens
 
 ## Tutorials and resources used
 
